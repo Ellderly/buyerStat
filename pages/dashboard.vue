@@ -9,7 +9,7 @@
         <USelectMenu
           v-if="userRole === 'TEAMLEAD' && userTeams.length > 1"
           v-model="selectedTeam"
-          :options="[{ id: null, name: 'Все команды' }, ...userTeams]"
+          :options="[{ id: undefined, name: 'Все команды' }, ...userTeams]"
           option-attribute="name"
           value-attribute="id"
           placeholder="Выберите команду"
@@ -192,13 +192,26 @@ interface SourceDataItem {
   revenue: number
 }
 
+interface AuthUser {
+  id: number
+  username: string
+  name: string
+  role: string
+  teamId: number | null
+  teams?: Array<{ id: number; name: string }>
+}
+
+interface AuthResponse {
+  user: AuthUser
+}
+
 const toast = useToast()
 
 // State
 const isLoading = ref(false)
 const selectedPeriod = ref('week')
 const userTeams = ref<Array<{ id: number; name: string }>>([])
-const selectedTeam = ref<number | null>(null)
+const selectedTeam = ref<number | undefined>(undefined)
 const userRole = ref<string>('')
 
 const kpis = ref({
@@ -237,7 +250,7 @@ function formatNumber(num: number) {
 
 async function fetchUserTeams() {
   try {
-    const { data } = await useFetch('/api/auth/me')
+    const { data } = await useFetch<AuthResponse>('/api/auth/me')
     if (data.value?.user) {
       userRole.value = data.value.user.role
       if (data.value.user.teams) {
@@ -421,6 +434,91 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .page-header { flex-direction: column; gap: 1rem; }
+  .page-header { 
+    flex-direction: column; 
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .header-actions :deep(.relative) {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .kpi-card {
+    padding: 0.875rem;
+    gap: 0.5rem;
+  }
+  
+  .kpi-icon {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
+  }
+  
+  .kpi-value {
+    font-size: 1rem;
+  }
+  
+  .kpi-label {
+    font-size: 0.7rem;
+  }
+  
+  .kpi-change {
+    font-size: 0.65rem;
+  }
+  
+  .chart-card {
+    padding: 1rem;
+  }
+  
+  .chart-card.main-chart {
+    min-height: 280px;
+  }
+  
+  .chart-title {
+    font-size: 0.875rem;
+  }
+  
+  .table-card {
+    padding: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table-title {
+    font-size: 0.875rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .page-subtitle {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .kpi-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
 }
 </style>

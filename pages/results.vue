@@ -436,9 +436,91 @@ onMounted(() => {
     gap: 1rem;
     align-items: flex-start;
   }
+  
+  .page-header button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .filters-card {
+    padding: 1rem;
+  }
+  
+  .filters-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  
+  .filters-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .filters-actions button {
+    width: 100%;
+    justify-content: center;
+  }
 
   .totals-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .total-card {
+    padding: 1rem;
+  }
+  
+  .total-label {
+    font-size: 0.65rem;
+  }
+  
+  .total-value {
+    font-size: 1.25rem;
+  }
+  
+  .table-card {
+    padding: 0.75rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .table-card :deep(table) {
+    font-size: 0.75rem;
+  }
+  
+  .table-card :deep(th),
+  .table-card :deep(td) {
+    padding: 0.5rem 0.375rem;
+    white-space: nowrap;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .page-subtitle {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .totals-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .total-card {
+    padding: 0.75rem;
+  }
+  
+  .total-value {
+    font-size: 1rem;
   }
 }
 </style>

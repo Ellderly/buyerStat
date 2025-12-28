@@ -45,6 +45,14 @@
       </div>
     </aside>
 
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <div class="logo">
+        <UIcon name="i-heroicons-chart-bar-square" class="logo-icon" />
+        <span class="logo-text">MBAnalytics</span>
+      </div>
+    </header>
+
     <!-- Bottom Nav (Mobile) -->
     <nav class="bottom-nav">
       <NuxtLink to="/dashboard" class="bottom-nav-item" active-class="active">
@@ -236,12 +244,32 @@ onMounted(() => {
   
   .main-content {
     margin-left: 0;
+    padding-top: 80px; /* Space for mobile header */
     padding-bottom: 80px; /* Space for bottom nav */
   }
 
   .bottom-nav {
     display: flex;
   }
+  
+  .mobile-header {
+    display: flex;
+  }
+}
+
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(18, 18, 26, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 100;
+  padding: 0 1.5rem;
+  align-items: center;
 }
 
 .bottom-nav {
@@ -254,7 +282,8 @@ onMounted(() => {
   background: rgba(18, 18, 26, 0.95);
   backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  z-index: 100;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 9999; /* Ensure high z-index */
   justify-content: space-around;
   align-items: center;
   padding-bottom: env(safe-area-inset-bottom);
@@ -285,5 +314,19 @@ onMounted(() => {
 
 .bottom-nav-item:active {
   background: rgba(255, 255, 255, 0.03);
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+    padding-top: 70px;
+    padding-bottom: 74px;
+  }
 }
 </style>

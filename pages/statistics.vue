@@ -621,9 +621,72 @@ onMounted(() => {
     gap: 1rem;
     align-items: flex-start;
   }
+  
+  .add-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filters-card {
+    padding: 1rem;
+  }
+  
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .filters-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .filters-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .table-card {
+    padding: 0.75rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .table-card :deep(table) {
+    font-size: 0.75rem;
+  }
+  
+  .table-card :deep(th),
+  .table-card :deep(td) {
+    padding: 0.5rem 0.375rem;
+    white-space: nowrap;
+  }
 
   .calculated-preview {
     grid-template-columns: repeat(2, 1fr);
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .calc-value {
+    font-size: 1rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .page-subtitle {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .statistics-page :deep(.grid-cols-2) {
+    grid-template-columns: 1fr !important;
   }
 }
 </style>

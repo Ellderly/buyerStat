@@ -553,4 +553,75 @@ onMounted(() => {
   color: #64748b;
   padding: 3rem;
 }
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .page-subtitle {
+    font-size: 0.875rem;
+  }
+  
+  .tab-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .tab-header button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .tab-title {
+    font-size: 1.125rem;
+  }
+  
+  .tab-content {
+    padding-top: 1rem;
+  }
+  
+  .table-card {
+    padding: 0.75rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table-card :deep(table) {
+    font-size: 0.75rem;
+  }
+  
+  .table-card :deep(th),
+  .table-card :deep(td) {
+    padding: 0.5rem 0.375rem;
+    white-space: nowrap;
+  }
+  
+  .teams-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .team-card {
+    padding: 1rem;
+  }
+  
+  .team-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .team-name {
+    font-size: 1rem;
+  }
+  
+  .team-count {
+    font-size: 0.75rem;
+  }
+}
 </style>
