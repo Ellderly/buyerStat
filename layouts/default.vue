@@ -45,6 +45,30 @@
       </div>
     </aside>
 
+    <!-- Bottom Nav (Mobile) -->
+    <nav class="bottom-nav">
+      <NuxtLink to="/dashboard" class="bottom-nav-item" active-class="active">
+        <UIcon name="i-heroicons-squares-2x2" class="nav-icon" />
+        <span>Dash</span>
+      </NuxtLink>
+      <NuxtLink to="/statistics" class="bottom-nav-item" active-class="active">
+        <UIcon name="i-heroicons-table-cells" class="nav-icon" />
+        <span>Stats</span>
+      </NuxtLink>
+      <NuxtLink to="/results" class="bottom-nav-item" active-class="active">
+        <UIcon name="i-heroicons-document-chart-bar" class="nav-icon" />
+        <span>Results</span>
+      </NuxtLink>
+      <NuxtLink v-if="isAdmin" to="/admin" class="bottom-nav-item" active-class="active">
+        <UIcon name="i-heroicons-cog-6-tooth" class="nav-icon" />
+        <span>Admin</span>
+      </NuxtLink>
+      <button class="bottom-nav-item logout-btn" @click="logout">
+        <UIcon name="i-heroicons-arrow-right-start-on-rectangle" class="nav-icon" />
+        <span>Exit</span>
+      </button>
+    </nav>
+
     <!-- Main Content -->
     <main class="main-content">
       <slot />
@@ -207,12 +231,59 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    display: none;
   }
   
   .main-content {
     margin-left: 0;
+    padding-bottom: 80px; /* Space for bottom nav */
   }
+
+  .bottom-nav {
+    display: flex;
+  }
+}
+
+.bottom-nav {
+  display: none; /* Hidden on desktop */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(18, 18, 26, 0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  height: 100%;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.bottom-nav-item .nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.bottom-nav-item.active {
+  color: #818cf8;
+}
+
+.bottom-nav-item:active {
+  background: rgba(255, 255, 255, 0.03);
 }
 </style>
