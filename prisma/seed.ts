@@ -26,12 +26,14 @@ async function main() {
   console.log('✅ Teams created:', facebook.name, google.name)
 
   // Hash password
-  const hashedPassword = await bcrypt.hash('password', 10)
+  const hashedPassword = await bcrypt.hash('admin12345', 10)
 
   // Create admin
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {},
+    update: {
+      password: hashedPassword,
+    },
     create: {
       username: 'admin',
       password: hashedPassword,
