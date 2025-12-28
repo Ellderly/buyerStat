@@ -1,0 +1,55 @@
+// Prisma Schema for Media Buying Analytics
+// SQLite compatible (no enums)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") 
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// Team model - groups buyers together
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+}
+
+// User model with roles
+// role: "BUYER" | "TEAMLEAD" | "ADMIN"
+model User {
+  id         Int         @id @default(autoincrement())
+  username   String      @unique
+  password   String
+  name       String
+  role       String      @default("BUYER")
+  teamId     Int?
+  team       Team?       @relation(fields: [teamId], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  statistics Statistic[]
+}
+
+// Statistics - main data table
+// source: "FACEBOOK" | "GOOGLE" | "TIKTOK" | "TELEGRAM"
+model Statistic {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  source    String
+  geo       String
+  offer     String
+  creative  String
+  leads     Int      @default(0)
+  spend     Float    @default(0)
+  ftd       Int      @default(0)
+  revenue   Float    @default(0)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

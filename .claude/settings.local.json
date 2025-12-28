@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(sqlite3:*)",
+      "Bash(ls:*)",
+      "Bash(git init:*)"
+    ]
+  }
+}
