@@ -37,17 +37,6 @@
           />
         </UFormGroup>
 
-        <UFormGroup label="Команда" v-if="userTeams.length > 1">
-          <USelectMenu
-            v-model="selectedTeamFilter"
-            :options="[{ id: undefined, name: 'Все команды' }, ...userTeams]"
-            option-attribute="name"
-            value-attribute="id"
-            placeholder="Все команды"
-            @change="fetchStatistics"
-          />
-        </UFormGroup>
-
         <UFormGroup label="Дата от">
           <UInput
             v-model="filters.startDate"
@@ -157,46 +146,48 @@
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Команда" required>
+            <UFormGroup label="ГЕО" required>
               <USelectMenu
-                v-model="form.teamId"
-                :options="userTeams"
-                option-attribute="name"
-                value-attribute="id"
-                placeholder="Выберите команду"
+                v-model="form.geo"
+                :options="geoOptions"
+                option-attribute="label"
+                value-attribute="value"
+                placeholder="Выберите ГЕО"
               />
             </UFormGroup>
 
-            <UFormGroup label="ГЕО" required>
-              <UInput v-model="form.geo" placeholder="UA, PL, DE..." />
+            <UFormGroup label="Оффер" required>
+              <USelectMenu
+                v-model="form.offer"
+                :options="offerOptions"
+                option-attribute="label"
+                value-attribute="value"
+                placeholder="Выберите оффер"
+              />
             </UFormGroup>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Оффер" required>
-              <UInput v-model="form.offer" placeholder="Название оффера" />
-            </UFormGroup>
-
             <UFormGroup label="Креатив" required>
               <UInput v-model="form.creative" placeholder="Название креатива" />
             </UFormGroup>
-          </div>
 
-          <div class="grid grid-cols-2 gap-4">
             <UFormGroup label="Лиды">
               <UInput v-model="form.leads" type="number" min="0" />
             </UFormGroup>
+          </div>
 
+          <div class="grid grid-cols-2 gap-4">
             <UFormGroup label="Расходы ($)">
               <UInput v-model="form.spend" type="number" step="0.01" min="0" />
+            </UFormGroup>
+
+            <UFormGroup label="FTD">
+              <UInput v-model="form.ftd" type="number" min="0" />
             </UFormGroup>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="FTD">
-              <UInput v-model="form.ftd" type="number" min="0" />
-            </UFormGroup>
-
             <UFormGroup label="Revenue ($)">
               <UInput v-model="form.revenue" type="number" step="0.01" min="0" />
             </UFormGroup>
@@ -315,9 +306,9 @@ const form = reactive({
   leads: 0,
   spend: 0,
   ftd: 0,
-  revenue: 0,
-  teamId: undefined as number | undefined
+  revenue: 0
 })
+
 
 // Options
 const sourceOptions = [
@@ -327,6 +318,28 @@ const sourceOptions = [
   { label: 'TikTok', value: 'TIKTOK' },
   { label: 'Telegram', value: 'TELEGRAM' }
 ]
+
+const geoOptions = [
+  { label: 'RuEU full pull', value: 'RuEU full pull' },
+  { label: 'RuEU short pull', value: 'RuEU short pull' },
+  { label: 'RuTR', value: 'RuTR' },
+  { label: 'RuDE', value: 'RuDE' },
+  { label: 'RuES', value: 'RuES' },
+  { label: 'Ru Prubaltu', value: 'Ru Prubaltu' }
+]
+
+const offerOptions = ref<Array<{ label: string; value: string }>>([])
+
+const fetchOffers = async () => {
+  try {
+    const response = await $fetch<{ offers: Array<{ name: string; value: string }> }>('/api/offers')
+    offerOptions.value = response.offers.map(o => ({ label: o.name, value: o.value }))
+  } catch (error) {
+    console.error('Failed to fetch offers')
+    // Fallback to empty - offers will be loaded from DB
+    offerOptions.value = []
+  }
+}
 
 // Table columns
 const columns = [
@@ -397,17 +410,10 @@ const fetchUserTeams = async () => {
       const { teams } = await $fetch('/api/teams')
       userTeams.value = teams
     } else if (user.teamId) {
-      // For non-admins, use their assigned team
-      // Note: teamName should ideally be in the session/user object
       userTeams.value = [{ 
         id: user.teamId, 
         name: user.teamName || `Team #${user.teamId}` 
       }]
-    }
-
-    // Auto-select first team if only one available (or if adding new record)
-    if (userTeams.value.length === 1 && !editingId.value) {
-      form.teamId = userTeams.value[0].id
     }
   } catch (error) {
     console.error('Failed to fetch user teams')
@@ -422,7 +428,6 @@ const fetchStatistics = async () => {
     if (filters.geo) params.append('geo', filters.geo)
     if (filters.startDate) params.append('startDate', filters.startDate)
     if (filters.endDate) params.append('endDate', filters.endDate)
-    if (selectedTeamFilter.value) params.append('teamId', selectedTeamFilter.value.toString())
 
     const response = await $fetch<{ statistics: Statistic[] }>(`/api/statistics?${params}`)
     statistics.value = response.statistics
@@ -451,7 +456,6 @@ const resetForm = () => {
   form.spend = 0
   form.ftd = 0
   form.revenue = 0
-  form.teamId = userTeams.value.length === 1 ? userTeams.value[0].id : undefined
 }
 
 const openAddModal = () => {
@@ -471,7 +475,6 @@ const openEditModal = (row: Statistic) => {
   form.spend = row.spend
   form.ftd = row.ftd
   form.revenue = row.revenue
-  form.teamId = (row as any).teamId || undefined
   isModalOpen.value = true
 }
 
@@ -525,6 +528,7 @@ const deleteStatistic = async () => {
 // Load on mount
 onMounted(() => {
   fetchUserTeams()
+  fetchOffers()
   fetchStatistics()
 })
 </script>

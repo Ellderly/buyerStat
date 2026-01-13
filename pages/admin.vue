@@ -94,6 +94,42 @@
             </div>
           </div>
         </div>
+
+        <!-- Offers Tab -->
+        <div v-if="item.key === 'offers'" class="tab-content">
+          <div class="tab-header">
+            <h2 class="tab-title">Офферы</h2>
+            <UButton icon="i-heroicons-plus" @click="openOfferModal()">
+              Добавить оффер
+            </UButton>
+          </div>
+
+          <div class="table-card">
+            <UTable
+              :rows="offers"
+              :columns="offerColumns"
+              :loading="isLoadingOffers"
+            >
+              <template #value-data="{ row }">
+                <code class="text-xs bg-gray-800 px-2 py-1 rounded">{{ row.value }}</code>
+              </template>
+
+              <template #createdAt-data="{ row }">
+                {{ formatDate(row.createdAt) }}
+              </template>
+
+              <template #actions-data="{ row }">
+                <UButton
+                  icon="i-heroicons-trash"
+                  size="xs"
+                  variant="ghost"
+                  color="red"
+                  @click="confirmDeleteOffer(row)"
+                />
+              </template>
+            </UTable>
+          </div>
+        </div>
       </template>
     </UTabs>
 
@@ -209,6 +245,53 @@
         </template>
       </UCard>
     </UModal>
+
+    <!-- Offer Modal -->
+    <UModal v-model="isOfferModalOpen">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold">Новый оффер</h3>
+        </template>
+
+        <form class="space-y-4">
+          <UFormGroup label="Название" required>
+            <UInput v-model="offerForm.name" placeholder="WhatsApp AI v6" />
+          </UFormGroup>
+
+          <UFormGroup label="Техническое значение" required>
+            <UInput v-model="offerForm.value" placeholder="WhatsApp_AI_v6" />
+            <template #hint>
+              <span class="text-xs text-gray-500">Используется для передачи брокеру</span>
+            </template>
+          </UFormGroup>
+        </form>
+
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" @click="isOfferModalOpen = false">Отмена</UButton>
+            <UButton @click="createOffer" :loading="isSavingOffer">Добавить</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Delete Offer Confirmation -->
+    <UModal v-model="isDeleteOfferModalOpen">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold text-red-500">Удалить оффер?</h3>
+        </template>
+        <p class="text-gray-400">
+          Оффер будет деактивирован и скрыт из списка выбора.
+        </p>
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" @click="isDeleteOfferModalOpen = false">Отмена</UButton>
+            <UButton color="red" @click="deleteOffer">Удалить</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
@@ -233,6 +316,14 @@ interface Team {
   usersCount: number
 }
 
+interface Offer {
+  id: number
+  name: string
+  value: string
+  isActive: boolean
+  createdAt: string
+}
+
 const toast = useToast()
 
 // State
@@ -249,6 +340,18 @@ const editingUserId = ref<number | null>(null)
 const deletingUserId = ref<number | null>(null)
 const teamName = ref('')
 
+// Offers state
+const offers = ref<Offer[]>([])
+const isLoadingOffers = ref(false)
+const isOfferModalOpen = ref(false)
+const isSavingOffer = ref(false)
+const isDeleteOfferModalOpen = ref(false)
+const deletingOfferId = ref<number | null>(null)
+const offerForm = reactive({
+  name: '',
+  value: ''
+})
+
 const userForm = reactive({
   name: '',
   username: '',
@@ -260,7 +363,8 @@ const userForm = reactive({
 // Tabs
 const tabs = [
   { key: 'users', label: 'Пользователи', icon: 'i-heroicons-users' },
-  { key: 'teams', label: 'Команды', icon: 'i-heroicons-user-group' }
+  { key: 'teams', label: 'Команды', icon: 'i-heroicons-user-group' },
+  { key: 'offers', label: 'Офферы', icon: 'i-heroicons-tag' }
 ]
 
 // Users table columns
@@ -283,6 +387,14 @@ const roleOptions = [
 const teamOptions = computed(() =>
   teams.value.map(t => ({ label: t.name, value: t.id }))
 )
+
+// Offer columns
+const offerColumns = [
+  { key: 'name', label: 'Название' },
+  { key: 'value', label: 'Техническое значение' },
+  { key: 'createdAt', label: 'Добавлен' },
+  { key: 'actions', label: '' }
+]
 
 // Methods
 function getRoleColor(role: string): 'blue' | 'purple' | 'red' | 'gray' {
@@ -450,10 +562,68 @@ async function deleteTeam() {
   }
 }
 
+// Offers functions
+async function fetchOffers() {
+  isLoadingOffers.value = true
+  try {
+    const response = await $fetch<{ offers: Offer[] }>('/api/offers')
+    offers.value = response.offers
+  } catch (error) {
+    console.error('Failed to fetch offers')
+  } finally {
+    isLoadingOffers.value = false
+  }
+}
+
+function openOfferModal() {
+  offerForm.name = ''
+  offerForm.value = ''
+  isOfferModalOpen.value = true
+}
+
+async function createOffer() {
+  if (!offerForm.name || !offerForm.value) {
+    toast.add({ title: 'Заполните все поля', color: 'red' })
+    return
+  }
+  isSavingOffer.value = true
+  try {
+    await $fetch('/api/offers', {
+      method: 'POST',
+      body: offerForm
+    })
+    toast.add({ title: 'Оффер добавлен', color: 'green' })
+    isOfferModalOpen.value = false
+    fetchOffers()
+  } catch (error: any) {
+    toast.add({ title: error.data?.message || 'Ошибка', color: 'red' })
+  } finally {
+    isSavingOffer.value = false
+  }
+}
+
+function confirmDeleteOffer(offer: Offer) {
+  deletingOfferId.value = offer.id
+  isDeleteOfferModalOpen.value = true
+}
+
+async function deleteOffer() {
+  if (!deletingOfferId.value) return
+  try {
+    await $fetch(`/api/offers/${deletingOfferId.value}`, { method: 'DELETE' })
+    toast.add({ title: 'Оффер удален', color: 'green' })
+    isDeleteOfferModalOpen.value = false
+    fetchOffers()
+  } catch (error: any) {
+    toast.add({ title: error.data?.message || 'Ошибка', color: 'red' })
+  }
+}
+
 // Initialize
 onMounted(() => {
   fetchUsers()
   fetchTeams()
+  fetchOffers()
 })
 </script>
 

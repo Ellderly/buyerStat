@@ -17,9 +17,16 @@ export default defineEventHandler(async (event) => {
   const startDate = new Date()
 
   switch (period) {
+    case 'today':
+      startDate.setHours(0, 0, 0, 0)
+      endDate.setHours(23, 59, 59, 999)
+      break
     case 'yesterday':
-      startDate.setDate(endDate.getDate() - 1)
+      // Set to yesterday - both dates need to be yesterday
       endDate.setDate(endDate.getDate() - 1)
+      endDate.setHours(23, 59, 59, 999)
+      startDate.setDate(startDate.getDate() - 1)
+      startDate.setHours(0, 0, 0, 0)
       break
     case '3days':
       startDate.setDate(endDate.getDate() - 3)
@@ -121,6 +128,7 @@ export default defineEventHandler(async (event) => {
     select: {
       creative: true,
       offer: true,
+      source: true,
       leads: true,
       spend: true,
       revenue: true

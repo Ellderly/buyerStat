@@ -14,8 +14,8 @@
           <div class="logo">
             <UIcon name="i-heroicons-chart-bar-square" class="logo-icon" />
           </div>
-          <h1 class="title">MBAnalytics</h1>
-          <p class="subtitle">Система аналитики медиабаинга</p>
+          <h1 class="title">Garage Team</h1>
+          <p class="subtitle">Система аналитики</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="login-form">

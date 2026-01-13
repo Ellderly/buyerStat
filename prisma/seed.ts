@@ -73,6 +73,27 @@ async function main() {
   console.log('   - TeamLead (teamlead / password) -> Team FACEBOOK')
   console.log('   - Buyer (buyer / password) -> Team FACEBOOK')
 
+  // Create initial offers
+  const offers = [
+    { name: 'EURES', value: 'EURES' },
+    { name: 'EURES Capital', value: 'EURES Capital' },
+    { name: 'WhatsApp_AI_v4', value: 'WhatsApp_AI_v4' },
+    { name: 'WhatsApp AI', value: 'WhatsApp AI' },
+    { name: 'WhatsApp AI v5', value: 'WhatsApp AI v5' },
+    { name: 'WhatsApp_trade', value: 'WhatsApp_trade' },
+    { name: 'Gemini', value: 'Gemini' }
+  ]
+
+  for (const offer of offers) {
+    await prisma.offer.upsert({
+      where: { name: offer.name },
+      update: {},
+      create: offer
+    })
+  }
+
+  console.log('✅ Offers created:', offers.map(o => o.name).join(', '))
+
   console.log('\n🎉 Seed completed!')
 }
 

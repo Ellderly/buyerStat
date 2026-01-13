@@ -159,6 +159,73 @@
         </UTable>
       </div>
     </div>
+
+    <!-- Employee Analytics -->
+    <div v-if="(userRole === 'ADMIN' || userRole === 'TEAMLEAD') && employeeSources.length > 0" class="mt-6">
+      <div class="table-card">
+        <div class="card-header border-b border-gray-800 pb-4 mb-4">
+          <h3 class="table-title">Аналитика по сотрудникам</h3>
+          
+          <div class="flex gap-2 mt-2">
+            <UButton 
+              v-for="source in employeeSources" 
+              :key="source"
+              :variant="activeSourceTab === source ? 'solid' : 'ghost'"
+              :color="activeSourceTab === source ? 'primary' : 'gray'"
+              size="xs"
+              @click="activeSourceTab = source"
+            >
+              {{ source }}
+            </UButton>
+          </div>
+        </div>
+
+        <UTable
+          :rows="employeeStats[activeSourceTab] || []"
+          :columns="employeeColumns"
+          :loading="isLoadingEmployees"
+        >
+          <template #rank-data="{ index }">
+            <div class="flex justify-center">
+              <span 
+                class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold"
+                :class="{
+                  'bg-yellow-500 text-black': index === 0,
+                  'bg-gray-300 text-black': index === 1,
+                  'bg-orange-400 text-black': index === 2,
+                  'bg-gray-800 text-gray-400': index > 2
+                }"
+              >
+                {{ index + 1 }}
+              </span>
+            </div>
+          </template>
+
+          <template #profit-data="{ row }">
+            <span :class="row.profit >= 0 ? 'text-green-500' : 'text-red-500'">
+              ${{ row.profit.toFixed(2) }}
+            </span>
+          </template>
+
+          <template #roi-data="{ row }">
+            <div class="flex items-center gap-2">
+              <span :class="row.roi >= 0 ? 'text-green-500' : 'text-red-500'">
+                {{ row.roi.toFixed(1) }}%
+              </span>
+              <div class="roi-indicator" :class="getRoiClass(row.roi)"></div>
+            </div>
+          </template>
+
+          <template #revenue-data="{ row }">
+            ${{ row.revenue.toFixed(2) }}
+          </template>
+          
+          <template #spend-data="{ row }">
+            ${{ row.spend.toFixed(2) }}
+          </template>
+        </UTable>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -205,6 +272,20 @@ interface AuthResponse {
   user: AuthUser
 }
 
+interface EmployeeStat {
+  userId: number
+  name: string
+  username: string
+  leads: number
+  spend: number
+  ftd: number
+  revenue: number
+  profit: number
+  roi: number
+  cpl: number
+  cr: number
+}
+
 const toast = useToast()
 
 // State
@@ -228,7 +309,25 @@ const topCreatives = ref<TopCreative[]>([])
 const trendData = ref<TrendDataItem[]>([])
 const sourceData = ref<SourceDataItem[]>([])
 
+// Employee Analytics State
+const employeeStats = ref<Record<string, EmployeeStat[]>>({})
+const employeeSources = ref<string[]>([])
+const activeSourceTab = ref('')
+const isLoadingEmployees = ref(false)
+
+const employeeColumns = [
+  { key: 'rank', label: '#' },
+  { key: 'name', label: 'Сотрудник' },
+  { key: 'leads', label: 'Лиды', sortable: true },
+  { key: 'spend', label: 'Spend', sortable: true },
+  { key: 'ftd', label: 'FTD', sortable: true },
+  { key: 'revenue', label: 'Revenue', sortable: true },
+  { key: 'profit', label: 'Profit', sortable: true },
+  { key: 'roi', label: 'ROI', sortable: true }
+]
+
 const periodOptions = [
+  { label: 'Сегодня', value: 'today' },
   { label: 'Вчера', value: 'yesterday' },
   { label: '3 дня', value: '3days' },
   { label: 'Неделя', value: 'week' },
@@ -298,10 +397,36 @@ async function fetchDashboard() {
     topCreatives.value = response.topCreatives
     trendData.value = response.trendData
     sourceData.value = response.sourceData
+
+    if (userRole.value === 'ADMIN' || userRole.value === 'TEAMLEAD') {
+      fetchEmployeeStats()
+    }
   } catch (error) {
     toast.add({ title: 'Ошибка загрузки', color: 'red' })
   } finally {
     isLoading.value = false
+  }
+}
+
+async function fetchEmployeeStats() {
+  isLoadingEmployees.value = true
+  try {
+    let url = `/api/dashboard/employees?period=${selectedPeriod.value}`
+    if (selectedTeam.value) {
+      url += `&teamId=${selectedTeam.value}`
+    }
+    const response = await $fetch<{ employeeStats: Record<string, EmployeeStat[]>, sources: string[] }>(url)
+    employeeStats.value = response.employeeStats
+    employeeSources.value = response.sources
+    
+    // Set active tab if not set or invalid
+    if (!activeSourceTab.value || !response.sources.includes(activeSourceTab.value)) {
+      activeSourceTab.value = response.sources[0] || ''
+    }
+  } catch (error) {
+    console.error('Failed to fetch employee stats')
+  } finally {
+    isLoadingEmployees.value = false
   }
 }
 

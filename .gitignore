@@ -36,3 +36,7 @@ lerna-debug.log*
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Local documentation (not for GitHub)
+ARCHITECTURE.md
+COMMANDS.md

@@ -187,6 +187,7 @@ const groupByOptions = [
 ]
 
 const periodOptions = [
+  { label: 'Сегодня', value: 'today' },
   { label: 'Вчера', value: 'yesterday' },
   { label: '3 дня', value: '3days' },
   { label: 'Неделя', value: 'week' },

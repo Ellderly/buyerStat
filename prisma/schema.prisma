@@ -53,3 +53,13 @@ model Statistic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Offer model - dynamic offers management
+model Offer {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique  // Display name
+  value     String   @unique  // Technical value (sent to broker)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
