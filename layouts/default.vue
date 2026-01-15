@@ -235,6 +235,62 @@ onMounted(() => {
   padding: 2rem;
   background: #0a0a0f;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Medium screens - 1024px to 1280px */
+@media (max-width: 1280px) {
+  .sidebar {
+    width: 200px;
+  }
+  
+  .main-content {
+    margin-left: 200px;
+    padding: 1.5rem;
+  }
+  
+  .logo-text {
+    font-size: 1rem;
+  }
+}
+
+/* Smaller desktops - 900px to 1024px */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 70px;
+  }
+  
+  .sidebar-header {
+    padding: 1rem 0.5rem;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  .nav-item span {
+    display: none;
+  }
+  
+  .nav-item {
+    justify-content: center;
+    padding: 0.75rem;
+  }
+  
+  .sidebar-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+  }
+  
+  .user-details {
+    display: none;
+  }
+  
+  .main-content {
+    margin-left: 70px;
+    padding: 1rem;
+  }
 }
 
 @media (max-width: 768px) {

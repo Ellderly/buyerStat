@@ -110,10 +110,6 @@
               :columns="offerColumns"
               :loading="isLoadingOffers"
             >
-              <template #value-data="{ row }">
-                <code class="text-xs bg-gray-800 px-2 py-1 rounded">{{ row.value }}</code>
-              </template>
-
               <template #createdAt-data="{ row }">
                 {{ formatDate(row.createdAt) }}
               </template>
@@ -257,13 +253,6 @@
           <UFormGroup label="Название" required>
             <UInput v-model="offerForm.name" placeholder="WhatsApp AI v6" />
           </UFormGroup>
-
-          <UFormGroup label="Техническое значение" required>
-            <UInput v-model="offerForm.value" placeholder="WhatsApp_AI_v6" />
-            <template #hint>
-              <span class="text-xs text-gray-500">Используется для передачи брокеру</span>
-            </template>
-          </UFormGroup>
         </form>
 
         <template #footer>
@@ -348,8 +337,7 @@ const isSavingOffer = ref(false)
 const isDeleteOfferModalOpen = ref(false)
 const deletingOfferId = ref<number | null>(null)
 const offerForm = reactive({
-  name: '',
-  value: ''
+  name: ''
 })
 
 const userForm = reactive({
@@ -391,7 +379,6 @@ const teamOptions = computed(() =>
 // Offer columns
 const offerColumns = [
   { key: 'name', label: 'Название' },
-  { key: 'value', label: 'Техническое значение' },
   { key: 'createdAt', label: 'Добавлен' },
   { key: 'actions', label: '' }
 ]
@@ -577,13 +564,12 @@ async function fetchOffers() {
 
 function openOfferModal() {
   offerForm.name = ''
-  offerForm.value = ''
   isOfferModalOpen.value = true
 }
 
 async function createOffer() {
-  if (!offerForm.name || !offerForm.value) {
-    toast.add({ title: 'Заполните все поля', color: 'red' })
+  if (!offerForm.name) {
+    toast.add({ title: 'Заполните название', color: 'red' })
     return
   }
   isSavingOffer.value = true

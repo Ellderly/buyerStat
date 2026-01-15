@@ -15,25 +15,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { name, value } = body
+  const { name } = body
 
-  if (!name || !value) {
-    throw createError({ statusCode: 400, message: 'Name and value are required' })
+  if (!name) {
+    throw createError({ statusCode: 400, message: 'Название обязательно' })
   }
 
   // Check for duplicates
   const existing = await prisma.offer.findFirst({
-    where: {
-      OR: [{ name }, { value }]
-    }
+    where: { name }
   })
 
   if (existing) {
-    throw createError({ statusCode: 400, message: 'Оффер с таким названием или значением уже существует' })
+    throw createError({ statusCode: 400, message: 'Оффер с таким названием уже существует' })
   }
 
+  // Use name as value
   const offer = await prisma.offer.create({
-    data: { name, value }
+    data: { name, value: name }
   })
 
   return { offer }
