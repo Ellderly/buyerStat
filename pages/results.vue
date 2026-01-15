@@ -3,7 +3,7 @@
     <header class="page-header">
       <div>
         <h1 class="page-title">Результаты</h1>
-        <p class="page-subtitle">Агрегированные отчеты и аналитика</p>
+        <p class="page-subtitle">Детальный отчет по всем записям</p>
       </div>
       <div class="header-actions">
         <UButton 
@@ -19,15 +19,6 @@
     <!-- Filters -->
     <div class="filters-card">
       <div class="filters-grid">
-        <UFormGroup label="Группировка">
-          <USelectMenu
-            v-model="groupBy"
-            :options="groupByOptions"
-            option-attribute="label"
-            value-attribute="value"
-          />
-        </UFormGroup>
-
         <UFormGroup label="Период">
           <USelectMenu
             v-model="period"
@@ -44,6 +35,48 @@
 
         <UFormGroup label="Дата до">
           <UInput v-model="filters.endDate" type="date" />
+        </UFormGroup>
+
+        <UFormGroup label="Источник">
+          <USelectMenu
+            v-model="filters.source"
+            :options="sourceOptions"
+            option-attribute="label"
+            value-attribute="value"
+            placeholder="Все источники"
+          />
+        </UFormGroup>
+      </div>
+
+      <div class="filters-grid mt-4">
+        <UFormGroup label="ГЕО">
+          <USelectMenu
+            v-model="filters.geo"
+            :options="geoOptions"
+            option-attribute="label"
+            value-attribute="value"
+            placeholder="Все ГЕО"
+          />
+        </UFormGroup>
+
+        <UFormGroup label="Оффер">
+          <USelectMenu
+            v-model="filters.offer"
+            :options="offerOptions"
+            option-attribute="label"
+            value-attribute="value"
+            placeholder="Все офферы"
+          />
+        </UFormGroup>
+
+        <UFormGroup v-if="userRole === 'ADMIN' || userRole === 'TEAMLEAD'" label="Сотрудник">
+          <USelectMenu
+            v-model="filters.userId"
+            :options="[{ id: '', name: 'Все сотрудники' }, ...employees]"
+            option-attribute="name"
+            value-attribute="id"
+            placeholder="Все сотрудники"
+          />
         </UFormGroup>
       </div>
 
@@ -93,8 +126,18 @@
         :loading="isLoading"
         :empty-state="{ icon: 'i-heroicons-circle-stack-20-solid', label: 'Нет данных за выбранный период' }"
       >
-        <template #key-data="{ row }">
-          <span class="font-medium">{{ formatKey(row.key) }}</span>
+        <template #date-data="{ row }">
+          {{ formatDate(row.date) }}
+        </template>
+
+        <template #source-data="{ row }">
+          <UBadge :color="getSourceColor(row.source)" variant="soft">
+            {{ row.source }}
+          </UBadge>
+        </template>
+
+        <template #userName-data="{ row }">
+          <span class="text-gray-300">{{ row.user?.name || '-' }}</span>
         </template>
 
         <template #spend-data="{ row }">
@@ -106,25 +149,25 @@
         </template>
 
         <template #cpl-data="{ row }">
-          ${{ row.cpl.toFixed(2) }}
+          ${{ getCPL(row).toFixed(2) }}
         </template>
 
         <template #cr-data="{ row }">
-          {{ row.cr.toFixed(1) }}%
+          {{ getCR(row).toFixed(1) }}%
         </template>
 
         <template #profit-data="{ row }">
-          <span :class="row.profit >= 0 ? 'text-green-500' : 'text-red-500'">
-            ${{ row.profit.toFixed(2) }}
+          <span :class="getProfit(row) >= 0 ? 'text-green-500' : 'text-red-500'">
+            ${{ getProfit(row).toFixed(2) }}
           </span>
         </template>
 
         <template #roi-data="{ row }">
           <div class="flex items-center gap-2">
-            <span :class="row.roi >= 0 ? 'text-green-500' : 'text-red-500'">
-              {{ row.roi.toFixed(1) }}%
+            <span :class="getROI(row) >= 0 ? 'text-green-500' : 'text-red-500'">
+              {{ getROI(row).toFixed(1) }}%
             </span>
-            <div class="roi-indicator" :class="getRoiClass(row.roi)"></div>
+            <div class="roi-indicator" :class="getRoiClass(getROI(row))"></div>
           </div>
         </template>
       </UTable>
@@ -137,17 +180,18 @@ definePageMeta({
   middleware: ['auth']
 })
 
-interface ResultRow {
-  key: string
+interface Statistic {
+  id: number
+  date: string
+  source: string
+  geo: string
+  offer: string
+  creative: string
   leads: number
   spend: number
   ftd: number
   revenue: number
-  profit: number
-  roi: number
-  cpl: number
-  cr: number
-  count: number
+  user?: { name: string; username: string }
 }
 
 interface Totals {
@@ -157,73 +201,114 @@ interface Totals {
   revenue: number
   profit: number
   roi: number
-  cpl: number
-  cr: number
 }
 
 const toast = useToast()
 
 // State
-const results = ref<ResultRow[]>([])
+const results = ref<Statistic[]>([])
 const totals = ref<Totals>({
-  leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0, cpl: 0, cr: 0
+  leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0
 })
 const isLoading = ref(false)
-const groupBy = ref('date')
 const period = ref('week')
+const userRole = ref('')
+const employees = ref<Array<{ id: number; name: string }>>([])
+const offerOptions = ref<Array<{ label: string; value: string }>>([])
 
 const filters = reactive({
   startDate: '',
-  endDate: ''
+  endDate: '',
+  source: '',
+  geo: '',
+  offer: '',
+  userId: '' as string | number
 })
 
 // Options
-const groupByOptions = [
-  { label: 'По дате', value: 'date' },
-  { label: 'По офферу', value: 'offer' },
-  { label: 'По креативу', value: 'creative' },
-  { label: 'По ГЕО', value: 'geo' },
-  { label: 'По источнику', value: 'source' }
-]
-
 const periodOptions = [
   { label: 'Сегодня', value: 'today' },
   { label: 'Вчера', value: 'yesterday' },
   { label: '3 дня', value: '3days' },
   { label: 'Неделя', value: 'week' },
-  { label: 'Месяц', value: 'month' },
+  { label: 'Текущий месяц', value: 'currentMonth' },
+  { label: 'Предыдущий месяц', value: 'prevMonth' },
+  { label: 'Весь период', value: 'all' },
   { label: 'Произвольный', value: 'custom' }
 ]
 
-// Table columns
-const columns = computed(() => [
-  { key: 'key', label: getGroupLabel() },
-  { key: 'leads', label: 'Лиды' },
-  { key: 'ftd', label: 'FTD' },
-  { key: 'spend', label: 'Расходы' },
-  { key: 'revenue', label: 'Revenue' },
-  { key: 'cpl', label: 'CPL' },
-  { key: 'cr', label: 'CR%' },
-  { key: 'profit', label: 'Profit' },
-  { key: 'roi', label: 'ROI' }
-])
+const sourceOptions = [
+  { label: 'Все источники', value: '' },
+  { label: 'Facebook', value: 'FACEBOOK' },
+  { label: 'Google', value: 'GOOGLE' },
+  { label: 'TikTok', value: 'TIKTOK' },
+  { label: 'Telegram', value: 'TELEGRAM' }
+]
 
-function getGroupLabel() {
-  const labels: Record<string, string> = {
-    date: 'Дата',
-    offer: 'Оффер',
-    creative: 'Креатив',
-    geo: 'ГЕО',
-    source: 'Источник'
+const geoOptions = [
+  { label: 'Все ГЕО', value: '' },
+  { label: 'RuEU full pull', value: 'RuEU full pull' },
+  { label: 'RuEU short pull', value: 'RuEU short pull' },
+  { label: 'RuTR', value: 'RuTR' },
+  { label: 'RuDE', value: 'RuDE' },
+  { label: 'RuES', value: 'RuES' },
+  { label: 'Ru Prubaltu', value: 'Ru Prubaltu' }
+]
+
+// Table columns - show userName only for admin/teamlead
+const columns = computed(() => {
+  const base = [
+    { key: 'date', label: 'Дата' },
+    { key: 'source', label: 'Источник' },
+  ]
+  
+  if (userRole.value === 'ADMIN' || userRole.value === 'TEAMLEAD') {
+    base.push({ key: 'userName', label: 'Сотрудник' })
   }
-  return labels[groupBy.value] || 'Группа'
+
+  return [
+    ...base,
+    { key: 'geo', label: 'ГЕО' },
+    { key: 'offer', label: 'Оффер' },
+    { key: 'creative', label: 'Креатив' },
+    { key: 'leads', label: 'Лиды' },
+    { key: 'spend', label: 'Spend' },
+    { key: 'ftd', label: 'FTD' },
+    { key: 'revenue', label: 'Revenue' },
+    { key: 'profit', label: 'Profit' },
+    { key: 'roi', label: 'ROI' }
+  ]
+})
+
+// Computed metrics
+function getProfit(row: Statistic) {
+  return row.revenue - row.spend
 }
 
-function formatKey(key: string) {
-  if (groupBy.value === 'date') {
-    return new Date(key).toLocaleDateString('ru-RU')
+function getROI(row: Statistic) {
+  return row.spend > 0 ? ((row.revenue - row.spend) / row.spend) * 100 : 0
+}
+
+function getCPL(row: Statistic) {
+  return row.leads > 0 ? row.spend / row.leads : 0
+}
+
+function getCR(row: Statistic) {
+  return row.leads > 0 ? (row.ftd / row.leads) * 100 : 0
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('ru-RU')
+}
+
+function getSourceColor(source: string): 'blue' | 'red' | 'pink' | 'cyan' | 'gray' {
+  const colors: Record<string, 'blue' | 'red' | 'pink' | 'cyan' | 'gray'> = {
+    FACEBOOK: 'blue',
+    GOOGLE: 'red',
+    TIKTOK: 'pink',
+    TELEGRAM: 'cyan'
   }
-  return key
+  return colors[source] || 'gray'
 }
 
 function getRoiClass(roi: number) {
@@ -235,12 +320,17 @@ function getRoiClass(roi: number) {
 function applyPeriod() {
   const today = new Date()
   let startDate = new Date()
+  let endDate = new Date()
   
   switch (period.value) {
+    case 'today':
+      filters.startDate = today.toISOString().split('T')[0]
+      filters.endDate = today.toISOString().split('T')[0]
+      break
     case 'yesterday':
       startDate.setDate(today.getDate() - 1)
+      filters.startDate = startDate.toISOString().split('T')[0]
       filters.endDate = startDate.toISOString().split('T')[0]
-      filters.startDate = filters.endDate
       break
     case '3days':
       startDate.setDate(today.getDate() - 3)
@@ -252,9 +342,20 @@ function applyPeriod() {
       filters.startDate = startDate.toISOString().split('T')[0]
       filters.endDate = today.toISOString().split('T')[0]
       break
-    case 'month':
-      startDate.setMonth(today.getMonth() - 1)
+    case 'currentMonth':
+      startDate.setDate(1)
       filters.startDate = startDate.toISOString().split('T')[0]
+      filters.endDate = today.toISOString().split('T')[0]
+      break
+    case 'prevMonth':
+      startDate.setMonth(today.getMonth() - 1)
+      startDate.setDate(1)
+      endDate.setDate(0) // Last day of previous month
+      filters.startDate = startDate.toISOString().split('T')[0]
+      filters.endDate = endDate.toISOString().split('T')[0]
+      break
+    case 'all':
+      filters.startDate = '2020-01-01'
       filters.endDate = today.toISOString().split('T')[0]
       break
   }
@@ -268,13 +369,27 @@ async function fetchResults() {
   isLoading.value = true
   try {
     const params = new URLSearchParams()
-    params.append('groupBy', groupBy.value)
     if (filters.startDate) params.append('startDate', filters.startDate)
     if (filters.endDate) params.append('endDate', filters.endDate)
+    if (filters.source) params.append('source', filters.source)
+    if (filters.geo) params.append('geo', filters.geo)
+    if (filters.offer) params.append('offer', filters.offer)
+    if (filters.userId) params.append('userId', filters.userId.toString())
 
-    const response = await $fetch(`/api/results?${params}`)
-    results.value = response.results
-    totals.value = response.totals
+    const response = await $fetch<{ statistics: Statistic[] }>(`/api/statistics?${params}`)
+    results.value = response.statistics
+
+    // Calculate totals
+    const t = { leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0 }
+    for (const r of response.statistics) {
+      t.leads += r.leads
+      t.spend += r.spend
+      t.ftd += r.ftd
+      t.revenue += r.revenue
+    }
+    t.profit = t.revenue - t.spend
+    t.roi = t.spend > 0 ? ((t.revenue - t.spend) / t.spend) * 100 : 0
+    totals.value = t
   } catch (error) {
     toast.add({ title: 'Ошибка загрузки', color: 'red' })
   } finally {
@@ -283,9 +398,42 @@ async function fetchResults() {
 }
 
 function resetFilters() {
-  groupBy.value = 'date'
   period.value = 'week'
+  filters.source = ''
+  filters.geo = ''
+  filters.offer = ''
+  filters.userId = ''
   applyPeriod()
+}
+
+async function fetchUserRole() {
+  try {
+    const { user } = await $fetch<{ user: { role: string } }>('/api/auth/me')
+    userRole.value = user.role
+  } catch (error) {
+    console.error('Failed to fetch user role')
+  }
+}
+
+async function fetchEmployees() {
+  try {
+    const { users } = await $fetch<{ users: Array<{ id: number; name: string }> }>('/api/users')
+    employees.value = users
+  } catch (error) {
+    console.error('Failed to fetch employees')
+  }
+}
+
+async function fetchOffers() {
+  try {
+    const { offers } = await $fetch<{ offers: Array<{ name: string; value: string }> }>('/api/offers')
+    offerOptions.value = [
+      { label: 'Все офферы', value: '' },
+      ...offers.map(o => ({ label: o.name, value: o.value }))
+    ]
+  } catch (error) {
+    console.error('Failed to fetch offers')
+  }
 }
 
 function exportCSV() {
@@ -294,17 +442,20 @@ function exportCSV() {
     return
   }
 
-  const headers = ['Группа', 'Лиды', 'FTD', 'Расходы', 'Revenue', 'CPL', 'CR%', 'Profit', 'ROI']
+  const headers = ['Дата', 'Источник', 'Сотрудник', 'ГЕО', 'Оффер', 'Креатив', 'Лиды', 'Spend', 'FTD', 'Revenue', 'Profit', 'ROI']
   const rows = results.value.map(r => [
-    r.key,
+    formatDate(r.date),
+    r.source,
+    r.user?.name || '-',
+    r.geo,
+    r.offer,
+    r.creative,
     r.leads,
-    r.ftd,
     r.spend.toFixed(2),
+    r.ftd,
     r.revenue.toFixed(2),
-    r.cpl.toFixed(2),
-    r.cr.toFixed(1),
-    r.profit.toFixed(2),
-    r.roi.toFixed(1)
+    getProfit(r).toFixed(2),
+    getROI(r).toFixed(1) + '%'
   ])
 
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
@@ -319,7 +470,12 @@ function exportCSV() {
 }
 
 // Initialize
-onMounted(() => {
+onMounted(async () => {
+  await fetchUserRole()
+  if (userRole.value === 'ADMIN' || userRole.value === 'TEAMLEAD') {
+    await fetchEmployees()
+  }
+  await fetchOffers()
   applyPeriod()
 })
 </script>
@@ -332,8 +488,10 @@ onMounted(() => {
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .page-title {
@@ -351,71 +509,68 @@ onMounted(() => {
 }
 
 .filters-card {
-  background: rgba(15, 15, 35, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 1rem;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  backdrop-filter: blur(10px);
 }
 
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
 .filters-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 .totals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .total-card {
-  background: rgba(15, 15, 35, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 0.75rem;
-  padding: 1.25rem;
+  padding: 1rem;
   text-align: center;
-}
-
-.total-card.profit {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
-  border-color: rgba(34, 197, 94, 0.2);
-}
-
-.total-card.roi {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
-  border-color: rgba(99, 102, 241, 0.2);
 }
 
 .total-label {
   display: block;
-  font-size: 0.75rem;
   color: #64748b;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .total-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e2e8f0;
 }
 
-.total-value.positive { color: #22c55e; }
-.total-value.negative { color: #ef4444; }
+.total-value.positive {
+  color: #22c55e;
+}
+
+.total-value.negative {
+  color: #ef4444;
+}
 
 .table-card {
-  background: rgba(15, 15, 35, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 1rem;
   padding: 1.5rem;
   overflow-x: auto;
@@ -427,101 +582,25 @@ onMounted(() => {
   border-radius: 50%;
 }
 
-.roi-indicator.roi-positive { background: #22c55e; }
-.roi-indicator.roi-neutral { background: #f59e0b; }
-.roi-indicator.roi-negative { background: #ef4444; }
+.roi-positive {
+  background: #22c55e;
+}
+
+.roi-neutral {
+  background: #eab308;
+}
+
+.roi-negative {
+  background: #ef4444;
+}
 
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .page-header button {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .filters-card {
-    padding: 1rem;
-  }
-  
   .filters-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-  }
-  
-  .filters-actions {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .filters-actions button {
-    width: 100%;
-    justify-content: center;
+    grid-template-columns: 1fr;
   }
 
   .totals-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-  
-  .total-card {
-    padding: 1rem;
-  }
-  
-  .total-label {
-    font-size: 0.65rem;
-  }
-  
-  .total-value {
-    font-size: 1.25rem;
-  }
-  
-  .table-card {
-    padding: 0.75rem;
-    margin-left: -1rem;
-    margin-right: -1rem;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-  }
-  
-  .table-card :deep(table) {
-    font-size: 0.75rem;
-  }
-  
-  .table-card :deep(th),
-  .table-card :deep(td) {
-    padding: 0.5rem 0.375rem;
-    white-space: nowrap;
-  }
-  
-  .page-title {
-    font-size: 1.5rem;
-  }
-  
-  .page-subtitle {
-    font-size: 0.875rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .filters-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .totals-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .total-card {
-    padding: 0.75rem;
-  }
-  
-  .total-value {
-    font-size: 1rem;
   }
 }
 </style>

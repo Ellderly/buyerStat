@@ -5,7 +5,7 @@
       <div class="sidebar-header">
         <div class="logo">
           <UIcon name="i-heroicons-chart-bar-square" class="logo-icon" />
-          <span class="logo-text">MBAnalytics</span>
+          <span class="logo-text">Garage Team Analytics</span>
         </div>
       </div>
 
@@ -49,7 +49,7 @@
     <header class="mobile-header">
       <div class="logo">
         <UIcon name="i-heroicons-chart-bar-square" class="logo-icon" />
-        <span class="logo-text">MBAnalytics</span>
+        <span class="logo-text">Garage Team Analytics</span>
       </div>
     </header>
 

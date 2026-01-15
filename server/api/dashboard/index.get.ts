@@ -34,8 +34,22 @@ export default defineEventHandler(async (event) => {
     case 'week':
       startDate.setDate(endDate.getDate() - 7)
       break
+    case 'currentMonth':
+      startDate.setDate(1)
+      startDate.setHours(0, 0, 0, 0)
+      break
     case 'month':
       startDate.setMonth(endDate.getMonth() - 1)
+      break
+    case 'prevMonth':
+      startDate.setMonth(startDate.getMonth() - 1)
+      startDate.setDate(1)
+      startDate.setHours(0, 0, 0, 0)
+      endDate.setDate(0) // Last day of prev month
+      endDate.setHours(23, 59, 59, 999)
+      break
+    case 'all':
+      startDate.setFullYear(2020, 0, 1)
       break
   }
 

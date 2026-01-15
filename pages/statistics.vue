@@ -52,6 +52,18 @@
         </UFormGroup>
       </div>
 
+      <div class="filters-grid mt-4">
+        <UFormGroup label="Сотрудник">
+          <USelectMenu
+            v-model="filters.userId"
+            :options="[{ id: '', name: 'Все сотрудники' }, ...employees]"
+            option-attribute="name"
+            value-attribute="id"
+            placeholder="Все сотрудники"
+          />
+        </UFormGroup>
+      </div>
+
       <div class="filters-actions">
         <UButton variant="soft" @click="resetFilters">
           Сбросить
@@ -78,6 +90,10 @@
           <UBadge :color="getSourceColor(row.source)" variant="soft">
             {{ row.source }}
           </UBadge>
+        </template>
+
+        <template #userName-data="{ row }">
+          <span class="text-gray-300">{{ row.user?.name || '-' }}</span>
         </template>
 
         <template #spend-data="{ row }">
@@ -293,8 +309,12 @@ const filters = reactive({
   source: '',
   geo: '',
   startDate: '',
-  endDate: ''
+  endDate: '',
+  userId: '' as string | number
 })
+
+// Employees list for filter
+const employees = ref<Array<{ id: number; name: string; username: string }>>([]);
 
 // Form
 const form = reactive({
@@ -344,6 +364,7 @@ const fetchOffers = async () => {
 // Table columns
 const columns = [
   { key: 'date', label: 'Дата' },
+  { key: 'userName', label: 'Сотрудник' },
   { key: 'source', label: 'Источник' },
   { key: 'geo', label: 'ГЕО' },
   { key: 'offer', label: 'Оффер' },
@@ -428,6 +449,7 @@ const fetchStatistics = async () => {
     if (filters.geo) params.append('geo', filters.geo)
     if (filters.startDate) params.append('startDate', filters.startDate)
     if (filters.endDate) params.append('endDate', filters.endDate)
+    if (filters.userId) params.append('userId', filters.userId.toString())
 
     const response = await $fetch<{ statistics: Statistic[] }>(`/api/statistics?${params}`)
     statistics.value = response.statistics
@@ -443,7 +465,17 @@ const resetFilters = () => {
   filters.geo = ''
   filters.startDate = ''
   filters.endDate = ''
+  filters.userId = ''
   fetchStatistics()
+}
+
+const fetchEmployees = async () => {
+  try {
+    const { users } = await $fetch<{ users: Array<{ id: number; name: string; username: string }> }>('/api/users')
+    employees.value = users
+  } catch (error) {
+    console.error('Failed to fetch employees')
+  }
 }
 
 const resetForm = () => {
@@ -529,6 +561,7 @@ const deleteStatistic = async () => {
 onMounted(() => {
   fetchUserTeams()
   fetchOffers()
+  fetchEmployees()
   fetchStatistics()
 })
 </script>

@@ -51,6 +51,16 @@ export default defineEventHandler(async (event) => {
     whereClause.geo = query.geo
   }
 
+  // Offer filter
+  if (query.offer) {
+    whereClause.offer = query.offer
+  }
+
+  // UserId filter (for employee filter)
+  if (query.userId) {
+    whereClause.userId = parseInt(query.userId as string)
+  }
+
   const statistics = await prisma.statistic.findMany({
     where: whereClause,
     include: {

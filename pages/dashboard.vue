@@ -331,7 +331,9 @@ const periodOptions = [
   { label: 'Вчера', value: 'yesterday' },
   { label: '3 дня', value: '3days' },
   { label: 'Неделя', value: 'week' },
-  { label: 'Месяц', value: 'month' }
+  { label: 'Текущий месяц', value: 'currentMonth' },
+  { label: 'Предыдущий месяц', value: 'prevMonth' },
+  { label: 'Весь период', value: 'all' }
 ]
 
 const creativeColumns = [
