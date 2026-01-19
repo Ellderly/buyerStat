@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
 
   // Calculate date range based on period
   const period = (query.period as string) || 'week'
+  const source = query.source as string | undefined
   const endDate = new Date()
   const startDate = new Date()
 
@@ -59,6 +60,11 @@ export default defineEventHandler(async (event) => {
       gte: startDate,
       lte: endDate
     }
+  }
+
+  // Source filter for ADMIN (FB, GOOGLE, TIKTOK, TG)
+  if (source && role === 'ADMIN') {
+    whereClause.source = source
   }
 
   if (role === 'BUYER') {
@@ -145,6 +151,7 @@ export default defineEventHandler(async (event) => {
       source: true,
       leads: true,
       spend: true,
+      ftd: true,
       revenue: true
     }
   })
@@ -155,6 +162,7 @@ export default defineEventHandler(async (event) => {
     offer: string
     leads: number
     spend: number
+    ftd: number
     revenue: number 
   }> = {}
 
@@ -166,11 +174,13 @@ export default defineEventHandler(async (event) => {
         offer: stat.offer,
         leads: 0,
         spend: 0,
+        ftd: 0,
         revenue: 0
       }
     }
     creativeMap[key].leads += stat.leads
     creativeMap[key].spend += stat.spend
+    creativeMap[key].ftd += stat.ftd
     creativeMap[key].revenue += stat.revenue
   }
 
@@ -178,7 +188,8 @@ export default defineEventHandler(async (event) => {
     .map(c => ({
       ...c,
       profit: c.revenue - c.spend,
-      roi: c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : 0
+      roi: c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : 0,
+      cr: c.leads > 0 ? (c.ftd / c.leads) * 100 : 0
     }))
     .sort((a, b) => b.roi - a.roi)
     .slice(0, 5)
@@ -219,7 +230,8 @@ export default defineEventHandler(async (event) => {
       revenue: { value: revenue, change: prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0 },
       profit: { value: profit, change: Math.abs(prevProfit) > 0 ? ((profit - prevProfit) / Math.abs(prevProfit)) * 100 : 0 },
       roi: { value: roi, change: roi - prevRoi },
-      cpl: { value: cpl }
+      cpl: { value: cpl },
+      cr: { value: leads > 0 ? (ftd / leads) * 100 : 0 }
     },
     topCreatives,
     trendData,

@@ -6,6 +6,16 @@
         <p class="page-subtitle">Обзор ключевых показателей</p>
       </div>
       <div class="header-actions">
+        <!-- Source filter for ADMIN only -->
+        <USelectMenu
+          v-if="userRole === 'ADMIN'"
+          v-model="selectedSource"
+          :options="sourceOptions"
+          option-attribute="label"
+          value-attribute="value"
+          placeholder="Все источники"
+          @change="fetchDashboard"
+        />
         <USelectMenu
           v-if="userRole === 'TEAMLEAD' && userTeams.length > 1"
           v-model="selectedTeam"
@@ -32,7 +42,7 @@
           <UIcon name="i-heroicons-currency-dollar" />
         </div>
         <div class="kpi-content">
-          <span class="kpi-label">Profit</span>
+          <span class="kpi-label">Прибыль</span>
           <span class="kpi-value">${{ formatNumber(kpis.profit.value) }}</span>
           <span class="kpi-change" :class="getChangeClass(kpis.profit.change)">
             <UIcon :name="getChangeIcon(kpis.profit.change)" />
@@ -106,12 +116,22 @@
           <span class="kpi-value">${{ kpis.cpl.value.toFixed(2) }}</span>
         </div>
       </div>
+
+      <div class="kpi-card cr">
+        <div class="kpi-icon">
+          <UIcon name="i-heroicons-arrow-trending-up" />
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">CR%</span>
+          <span class="kpi-value">{{ kpis.cr.value.toFixed(2) }}%</span>
+        </div>
+      </div>
     </div>
 
     <!-- Charts Section -->
     <div class="charts-grid">
       <div class="chart-card main-chart">
-        <h3 class="chart-title">Динамика Revenue / Расходы</h3>
+        <h3 class="chart-title">Динамика Доход / Расход</h3>
         <ClientOnly>
           <TrendChart :data="trendData" />
         </ClientOnly>
@@ -148,6 +168,10 @@
             </span>
           </template>
 
+          <template #cr-data="{ row }">
+            <span class="text-emerald-400">{{ row.cr.toFixed(1) }}%</span>
+          </template>
+
           <template #roi-data="{ row }">
             <div class="flex items-center gap-2">
               <span :class="row.roi >= 0 ? 'text-green-500' : 'text-red-500'">
@@ -161,27 +185,15 @@
     </div>
 
     <!-- Employee Analytics -->
-    <div v-if="(userRole === 'ADMIN' || userRole === 'TEAMLEAD') && employeeSources.length > 0" class="mt-6">
+    <div v-if="(userRole === 'ADMIN' || userRole === 'TEAMLEAD') && employeeList.length > 0" class="mt-6">
       <div class="table-card">
-        <div class="card-header border-b border-gray-800 pb-4 mb-4">
+        <div class="card-header pb-4 mb-4">
           <h3 class="table-title">Аналитика по сотрудникам</h3>
-          
-          <div class="flex gap-2 mt-2">
-            <UButton 
-              v-for="source in employeeSources" 
-              :key="source"
-              :variant="activeSourceTab === source ? 'solid' : 'ghost'"
-              :color="activeSourceTab === source ? 'primary' : 'gray'"
-              size="xs"
-              @click="activeSourceTab = source"
-            >
-              {{ source }}
-            </UButton>
-          </div>
+          <p v-if="selectedSource" class="text-gray-500 text-sm mt-1">Источник: {{ selectedSource }}</p>
         </div>
 
         <UTable
-          :rows="employeeStats[activeSourceTab] || []"
+          :rows="employeeList"
           :columns="employeeColumns"
           :loading="isLoadingEmployees"
         >
@@ -294,6 +306,16 @@ const selectedPeriod = ref('week')
 const userTeams = ref<Array<{ id: number; name: string }>>([])
 const selectedTeam = ref<number | undefined>(undefined)
 const userRole = ref<string>('')
+const selectedSource = ref<string>('')
+
+// Source filter options for ADMIN
+const sourceOptions = [
+  { label: 'Все источники', value: '' },
+  { label: 'FACEBOOK', value: 'FACEBOOK' },
+  { label: 'GOOGLE', value: 'GOOGLE' },
+  { label: 'TIKTOK', value: 'TIKTOK' },
+  { label: 'TELEGRAM', value: 'TELEGRAM' }
+]
 
 const kpis = ref({
   leads: { value: 0, change: 0 },
@@ -302,7 +324,8 @@ const kpis = ref({
   revenue: { value: 0, change: 0 },
   profit: { value: 0, change: 0 },
   roi: { value: 0, change: 0 },
-  cpl: { value: 0 }
+  cpl: { value: 0 },
+  cr: { value: 0 }
 })
 
 const topCreatives = ref<TopCreative[]>([])
@@ -310,19 +333,17 @@ const trendData = ref<TrendDataItem[]>([])
 const sourceData = ref<SourceDataItem[]>([])
 
 // Employee Analytics State
-const employeeStats = ref<Record<string, EmployeeStat[]>>({})
-const employeeSources = ref<string[]>([])
-const activeSourceTab = ref('')
+const employeeList = ref<EmployeeStat[]>([])
 const isLoadingEmployees = ref(false)
 
 const employeeColumns = [
   { key: 'rank', label: '#' },
   { key: 'name', label: 'Сотрудник' },
   { key: 'leads', label: 'Лиды', sortable: true },
-  { key: 'spend', label: 'Spend', sortable: true },
+  { key: 'spend', label: 'Расход', sortable: true },
   { key: 'ftd', label: 'FTD', sortable: true },
-  { key: 'revenue', label: 'Revenue', sortable: true },
-  { key: 'profit', label: 'Profit', sortable: true },
+  { key: 'revenue', label: 'Доход', sortable: true },
+  { key: 'profit', label: 'Прибыль', sortable: true },
   { key: 'roi', label: 'ROI', sortable: true }
 ]
 
@@ -340,7 +361,9 @@ const creativeColumns = [
   { key: 'creative', label: 'Креатив' },
   { key: 'offer', label: 'Оффер' },
   { key: 'leads', label: 'Лиды' },
-  { key: 'profit', label: 'Profit' },
+  { key: 'ftd', label: 'FTD' },
+  { key: 'cr', label: 'CR%' },
+  { key: 'profit', label: 'Прибыль' },
   { key: 'roi', label: 'ROI' }
 ]
 
@@ -351,11 +374,11 @@ function formatNumber(num: number) {
 
 async function fetchUserTeams() {
   try {
-    const { data } = await useFetch<AuthResponse>('/api/auth/me')
-    if (data.value?.user) {
-      userRole.value = data.value.user.role
-      if (data.value.user.teams) {
-        userTeams.value = data.value.user.teams
+    const response = await $fetch<AuthResponse>('/api/auth/me')
+    if (response?.user) {
+      userRole.value = response.user.role
+      if (response.user.teams) {
+        userTeams.value = response.user.teams
       }
     }
   } catch (error) {
@@ -388,6 +411,10 @@ async function fetchDashboard() {
     if (selectedTeam.value) {
       url += `&teamId=${selectedTeam.value}`
     }
+    // Source filter for ADMIN
+    if (selectedSource.value) {
+      url += `&source=${selectedSource.value}`
+    }
 
     const response = await $fetch<{
       kpis: typeof kpis.value
@@ -417,14 +444,12 @@ async function fetchEmployeeStats() {
     if (selectedTeam.value) {
       url += `&teamId=${selectedTeam.value}`
     }
-    const response = await $fetch<{ employeeStats: Record<string, EmployeeStat[]>, sources: string[] }>(url)
-    employeeStats.value = response.employeeStats
-    employeeSources.value = response.sources
-    
-    // Set active tab if not set or invalid
-    if (!activeSourceTab.value || !response.sources.includes(activeSourceTab.value)) {
-      activeSourceTab.value = response.sources[0] || ''
+    // Use global source filter  
+    if (selectedSource.value) {
+      url += `&source=${selectedSource.value}`
     }
+    const response = await $fetch<{ employees: EmployeeStat[] }>(url)
+    employeeList.value = response.employees
   } catch (error) {
     console.error('Failed to fetch employee stats')
   } finally {
@@ -511,6 +536,7 @@ onMounted(async () => {
 .kpi-card.ftd .kpi-icon { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
 .kpi-card.spend .kpi-icon { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 .kpi-card.cpl .kpi-icon { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+.kpi-card.cr .kpi-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; }
 
 .kpi-content { display: flex; flex-direction: column; }
 .kpi-label { color: #64748b; font-size: 0.8rem; font-weight: 500; }

@@ -116,6 +116,10 @@
           </span>
         </template>
 
+        <template #cr-data="{ row }">
+          <span class="text-emerald-400">{{ getCr(row).toFixed(1) }}%</span>
+        </template>
+
         <template #actions-data="{ row }">
           <div class="flex gap-2">
             <UButton
@@ -204,7 +208,7 @@
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Revenue ($)">
+            <UFormGroup label="Доход ($)">
               <UInput v-model="form.revenue" type="number" step="0.01" min="0" />
             </UFormGroup>
           </div>
@@ -220,7 +224,7 @@
               <span class="calc-value">{{ calculatedCR }}%</span>
             </div>
             <div class="calc-item">
-              <span class="calc-label">Profit:</span>
+              <span class="calc-label">Прибыль:</span>
               <span class="calc-value" :class="parseFloat(calculatedProfit) >= 0 ? 'text-green-500' : 'text-red-500'">
                 ${{ calculatedProfit }}
               </span>
@@ -372,9 +376,10 @@ const columns = [
   { key: 'leads', label: 'Лиды' },
   { key: 'spend', label: 'Расходы' },
   { key: 'ftd', label: 'FTD' },
-  { key: 'revenue', label: 'Revenue' },
-  { key: 'profit', label: 'Profit' },
+  { key: 'revenue', label: 'Доход' },
+  { key: 'profit', label: 'Прибыль' },
   { key: 'roi', label: 'ROI' },
+  { key: 'cr', label: 'CR%' },
   { key: 'actions', label: '' }
 ]
 
@@ -404,6 +409,11 @@ const getProfit = (row: Statistic) => row.revenue - row.spend
 const getRoi = (row: Statistic) => {
   if (row.spend === 0) return 0
   return ((row.revenue - row.spend) / row.spend) * 100
+}
+
+const getCr = (row: Statistic) => {
+  if (row.leads === 0) return 0
+  return (row.ftd / row.leads) * 100
 }
 
 const formatDate = (dateStr: string) => {

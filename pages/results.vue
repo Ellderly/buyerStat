@@ -101,11 +101,11 @@
         <span class="total-value">${{ totals.spend.toFixed(2) }}</span>
       </div>
       <div class="total-card">
-        <span class="total-label">Revenue</span>
+        <span class="total-label">Доход</span>
         <span class="total-value">${{ totals.revenue.toFixed(2) }}</span>
       </div>
       <div class="total-card profit">
-        <span class="total-label">Profit</span>
+        <span class="total-label">Прибыль</span>
         <span class="total-value" :class="totals.profit >= 0 ? 'positive' : 'negative'">
           ${{ totals.profit.toFixed(2) }}
         </span>
@@ -272,11 +272,12 @@ const columns = computed(() => {
     { key: 'offer', label: 'Оффер' },
     { key: 'creative', label: 'Креатив' },
     { key: 'leads', label: 'Лиды' },
-    { key: 'spend', label: 'Spend' },
+    { key: 'spend', label: 'Расход' },
     { key: 'ftd', label: 'FTD' },
-    { key: 'revenue', label: 'Revenue' },
-    { key: 'profit', label: 'Profit' },
-    { key: 'roi', label: 'ROI' }
+    { key: 'revenue', label: 'Доход' },
+    { key: 'profit', label: 'Прибыль' },
+    { key: 'roi', label: 'ROI' },
+    { key: 'cr', label: 'CR%' }
   ]
 })
 
@@ -442,7 +443,7 @@ function exportCSV() {
     return
   }
 
-  const headers = ['Дата', 'Источник', 'Сотрудник', 'ГЕО', 'Оффер', 'Креатив', 'Лиды', 'Spend', 'FTD', 'Revenue', 'Profit', 'ROI']
+  const headers = ['Дата', 'Источник', 'Сотрудник', 'ГЕО', 'Оффер', 'Креатив', 'Лиды', 'Расход', 'FTD', 'Доход', 'Прибыль', 'ROI']
   const rows = results.value.map(r => [
     formatDate(r.date),
     r.source,
