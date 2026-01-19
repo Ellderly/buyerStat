@@ -66,8 +66,8 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Source filter for ADMIN
-  if (source && role === 'ADMIN') {
+  // Source filter for ADMIN and TEAMLEAD
+  if (source) {
     whereClause.source = source
   }
 

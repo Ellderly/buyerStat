@@ -6,9 +6,9 @@
         <p class="page-subtitle">Обзор ключевых показателей</p>
       </div>
       <div class="header-actions">
-        <!-- Source filter for ADMIN only -->
+        <!-- Source filter for ADMIN and TEAMLEAD -->
         <USelectMenu
-          v-if="userRole === 'ADMIN'"
+          v-if="userRole === 'ADMIN' || userRole === 'TEAMLEAD'"
           v-model="selectedSource"
           :options="sourceOptions"
           option-attribute="label"
@@ -124,6 +124,27 @@
         <div class="kpi-content">
           <span class="kpi-label">CR%</span>
           <span class="kpi-value">{{ kpis.cr.value.toFixed(2) }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Team Section for TEAMLEAD -->
+    <div v-if="userRole === 'TEAMLEAD' && teamMembers.length > 0" class="team-section mt-6">
+      <div class="table-card">
+        <div class="card-header pb-4 mb-4">
+          <h3 class="table-title">Моя команда</h3>
+          <p class="text-gray-500 text-sm mt-1">{{ teamMembers.length }} участник(ов)</p>
+        </div>
+        <div class="team-members">
+          <div v-for="member in teamMembers" :key="member.id" class="team-member">
+            <div class="member-avatar">
+              {{ member.name.charAt(0).toUpperCase() }}
+            </div>
+            <div class="member-info">
+              <span class="member-name">{{ member.name }}</span>
+              <span class="member-username">@{{ member.username }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -336,6 +357,14 @@ const sourceData = ref<SourceDataItem[]>([])
 const employeeList = ref<EmployeeStat[]>([])
 const isLoadingEmployees = ref(false)
 
+// Team Members State for TEAMLEAD
+interface TeamMember {
+  id: number
+  name: string
+  username: string
+}
+const teamMembers = ref<TeamMember[]>([])
+
 const employeeColumns = [
   { key: 'rank', label: '#' },
   { key: 'name', label: 'Сотрудник' },
@@ -457,9 +486,23 @@ async function fetchEmployeeStats() {
   }
 }
 
+// Fetch team members for TEAMLEAD
+async function fetchTeamMembers() {
+  if (userRole.value !== 'TEAMLEAD') return
+  try {
+    const response = await $fetch<{ users: TeamMember[] }>('/api/users?teamOnly=true')
+    teamMembers.value = response.users
+  } catch (error) {
+    console.error('Failed to fetch team members')
+  }
+}
+
 // Init
 onMounted(async () => {
   await fetchUserTeams()
+  if (userRole.value === 'TEAMLEAD') {
+    await fetchTeamMembers()
+  }
   fetchDashboard()
 })
 </script>
@@ -673,5 +716,56 @@ onMounted(async () => {
     width: 1.75rem;
     height: 1.75rem;
   }
+}
+
+/* Team Members Section */
+.team-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.team-member:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.member-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-name {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.member-username {
+  font-size: 0.75rem;
+  color: #64748b;
 }
 </style>
