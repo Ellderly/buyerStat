@@ -367,19 +367,19 @@ const fetchOffers = async () => {
 
 // Table columns
 const columns = [
-  { key: 'date', label: 'Дата' },
+  { key: 'date', label: 'Дата', sortable: true },
   { key: 'userName', label: 'Сотрудник' },
-  { key: 'source', label: 'Источник' },
-  { key: 'geo', label: 'ГЕО' },
-  { key: 'offer', label: 'Оффер' },
-  { key: 'creative', label: 'Креатив' },
-  { key: 'leads', label: 'Лиды' },
-  { key: 'spend', label: 'Расходы' },
-  { key: 'ftd', label: 'FTD' },
-  { key: 'revenue', label: 'Доход' },
-  { key: 'profit', label: 'Прибыль' },
-  { key: 'roi', label: 'ROI' },
-  { key: 'cr', label: 'CR%' },
+  { key: 'source', label: 'Источник', sortable: true },
+  { key: 'geo', label: 'ГЕО', sortable: true },
+  { key: 'offer', label: 'Оффер', sortable: true },
+  { key: 'creative', label: 'Креатив', sortable: true },
+  { key: 'leads', label: 'Лиды', sortable: true },
+  { key: 'spend', label: 'Расходы', sortable: true },
+  { key: 'ftd', label: 'FTD', sortable: true },
+  { key: 'revenue', label: 'Доход', sortable: true },
+  { key: 'profit', label: 'Прибыль', sortable: true },
+  { key: 'roi', label: 'ROI', sortable: true },
+  { key: 'cr', label: 'CR%', sortable: true },
   { key: 'actions', label: '' }
 ]
 

@@ -56,6 +56,14 @@ export default defineEventHandler(async (event) => {
     whereClause.offer = query.offer
   }
 
+  // Creative filter (search by partial name)
+  if (query.creative) {
+    whereClause.creative = {
+      contains: query.creative as string,
+      mode: 'insensitive'
+    }
+  }
+
   // UserId filter (for employee filter)
   if (query.userId) {
     whereClause.userId = parseInt(query.userId as string)

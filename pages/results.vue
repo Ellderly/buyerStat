@@ -69,6 +69,14 @@
           />
         </UFormGroup>
 
+        <UFormGroup label="Креатив">
+          <UInput
+            v-model="filters.creative"
+            placeholder="Поиск по названию..."
+            icon="i-heroicons-magnifying-glass"
+          />
+        </UFormGroup>
+
         <UFormGroup v-if="userRole === 'ADMIN' || userRole === 'TEAMLEAD'" label="Сотрудник">
           <USelectMenu
             v-model="filters.userId"
@@ -222,6 +230,7 @@ const filters = reactive({
   source: '',
   geo: '',
   offer: '',
+  creative: '',
   userId: '' as string | number
 })
 
@@ -258,26 +267,26 @@ const geoOptions = [
 // Table columns - show userName only for admin/teamlead
 const columns = computed(() => {
   const base = [
-    { key: 'date', label: 'Дата' },
-    { key: 'source', label: 'Источник' },
+    { key: 'date', label: 'Дата', sortable: true },
+    { key: 'source', label: 'Источник', sortable: true },
   ]
   
   if (userRole.value === 'ADMIN' || userRole.value === 'TEAMLEAD') {
-    base.push({ key: 'userName', label: 'Сотрудник' })
+    base.push({ key: 'userName', label: 'Сотрудник', sortable: false })
   }
 
   return [
     ...base,
-    { key: 'geo', label: 'ГЕО' },
-    { key: 'offer', label: 'Оффер' },
-    { key: 'creative', label: 'Креатив' },
-    { key: 'leads', label: 'Лиды' },
-    { key: 'spend', label: 'Расход' },
-    { key: 'ftd', label: 'FTD' },
-    { key: 'revenue', label: 'Доход' },
-    { key: 'profit', label: 'Прибыль' },
-    { key: 'roi', label: 'ROI' },
-    { key: 'cr', label: 'CR%' }
+    { key: 'geo', label: 'ГЕО', sortable: true },
+    { key: 'offer', label: 'Оффер', sortable: true },
+    { key: 'creative', label: 'Креатив', sortable: true },
+    { key: 'leads', label: 'Лиды', sortable: true },
+    { key: 'spend', label: 'Расход', sortable: true },
+    { key: 'ftd', label: 'FTD', sortable: true },
+    { key: 'revenue', label: 'Доход', sortable: true },
+    { key: 'profit', label: 'Прибыль', sortable: true },
+    { key: 'roi', label: 'ROI', sortable: true },
+    { key: 'cr', label: 'CR%', sortable: true }
   ]
 })
 
@@ -375,6 +384,7 @@ async function fetchResults() {
     if (filters.source) params.append('source', filters.source)
     if (filters.geo) params.append('geo', filters.geo)
     if (filters.offer) params.append('offer', filters.offer)
+    if (filters.creative) params.append('creative', filters.creative)
     if (filters.userId) params.append('userId', filters.userId.toString())
 
     const response = await $fetch<{ statistics: Statistic[] }>(`/api/statistics?${params}`)
@@ -403,6 +413,7 @@ function resetFilters() {
   filters.source = ''
   filters.geo = ''
   filters.offer = ''
+  filters.creative = ''
   filters.userId = ''
   applyPeriod()
 }
