@@ -320,6 +320,9 @@ const filters = reactive({
 // Employees list for filter
 const employees = ref<Array<{ id: number; name: string; username: string }>>([]);
 
+// User role
+const userRole = ref('');
+
 // Form
 const form = reactive({
   date: new Date().toISOString().split('T')[0],
@@ -437,6 +440,8 @@ const fetchUserTeams = async () => {
 
     if (!user) return
 
+    userRole.value = user.role
+
     if (user.role === 'ADMIN') {
       const { teams } = await $fetch('/api/teams')
       userTeams.value = teams
@@ -481,7 +486,9 @@ const resetFilters = () => {
 
 const fetchEmployees = async () => {
   try {
-    const { users } = await $fetch<{ users: Array<{ id: number; name: string; username: string }> }>('/api/users')
+    // TEAMLEAD gets only their team members
+    const url = userRole.value === 'TEAMLEAD' ? '/api/users?teamOnly=true' : '/api/users'
+    const { users } = await $fetch<{ users: Array<{ id: number; name: string; username: string }> }>(url)
     employees.value = users
   } catch (error) {
     console.error('Failed to fetch employees')
@@ -568,8 +575,8 @@ const deleteStatistic = async () => {
 }
 
 // Load on mount
-onMounted(() => {
-  fetchUserTeams()
+onMounted(async () => {
+  await fetchUserTeams()
   fetchOffers()
   fetchEmployees()
   fetchStatistics()
