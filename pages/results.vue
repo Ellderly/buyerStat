@@ -429,7 +429,9 @@ async function fetchUserRole() {
 
 async function fetchEmployees() {
   try {
-    const { users } = await $fetch<{ users: Array<{ id: number; name: string }> }>('/api/users')
+    // TEAMLEAD gets only their team members
+    const url = userRole.value === 'TEAMLEAD' ? '/api/users?teamOnly=true' : '/api/users'
+    const { users } = await $fetch<{ users: Array<{ id: number; name: string }> }>(url)
     employees.value = users
   } catch (error) {
     console.error('Failed to fetch employees')
