@@ -193,6 +193,10 @@
             <span class="text-emerald-400">{{ row.cr.toFixed(1) }}%</span>
           </template>
 
+          <template #cpl-data="{ row }">
+            <span class="text-purple-400">${{ row.cpl.toFixed(2) }}</span>
+          </template>
+
           <template #roi-data="{ row }">
             <div class="flex items-center gap-2">
               <span :class="row.roi >= 0 ? 'text-green-500' : 'text-red-500'">
@@ -255,6 +259,10 @@
           
           <template #spend-data="{ row }">
             ${{ row.spend.toFixed(2) }}
+          </template>
+
+          <template #cpl-data="{ row }">
+            <span class="text-purple-400">${{ row.cpl.toFixed(2) }}</span>
           </template>
         </UTable>
       </div>
@@ -372,6 +380,7 @@ const employeeColumns = [
   { key: 'spend', label: 'Расход', sortable: true },
   { key: 'ftd', label: 'FTD', sortable: true },
   { key: 'revenue', label: 'Доход', sortable: true },
+  { key: 'cpl', label: 'CPL', sortable: true },
   { key: 'profit', label: 'Прибыль', sortable: true },
   { key: 'roi', label: 'ROI', sortable: true }
 ]
@@ -392,6 +401,7 @@ const creativeColumns = [
   { key: 'leads', label: 'Лиды' },
   { key: 'ftd', label: 'FTD' },
   { key: 'cr', label: 'CR%' },
+  { key: 'cpl', label: 'CPL' },
   { key: 'profit', label: 'Прибыль' },
   { key: 'roi', label: 'ROI' }
 ]

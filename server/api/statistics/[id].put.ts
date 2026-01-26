@@ -37,7 +37,10 @@ export default defineEventHandler(async (event) => {
       leads: body.leads !== undefined ? parseInt(body.leads) : undefined,
       spend: body.spend !== undefined ? parseFloat(body.spend) : undefined,
       ftd: body.ftd !== undefined ? parseInt(body.ftd) : undefined,
-      revenue: body.revenue !== undefined ? parseFloat(body.revenue) : undefined
+      revenue: body.revenue !== undefined ? parseFloat(body.revenue) : undefined,
+      // Telegram-specific fields (CPC/CPA рассчитываются на клиенте)
+      subscribers: body.source === 'TELEGRAM' ? (parseInt(body.subscribers) || null) : null,
+      clicks: body.source === 'TELEGRAM' ? (parseInt(body.clicks) || null) : null
     }
   })
 

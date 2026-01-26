@@ -120,6 +120,20 @@
           <span class="text-emerald-400">{{ getCr(row).toFixed(1) }}%</span>
         </template>
 
+        <template #cpc-data="{ row }">
+          <span v-if="getCpc(row) !== null" class="text-cyan-400">
+            ${{ getCpc(row)!.toFixed(2) }}
+          </span>
+          <span v-else class="text-gray-600">-</span>
+        </template>
+
+        <template #cpa-data="{ row }">
+          <span v-if="getCpa(row) !== null" class="text-cyan-400">
+            ${{ getCpa(row)!.toFixed(2) }}
+          </span>
+          <span v-else class="text-gray-600">-</span>
+        </template>
+
         <template #actions-data="{ row }">
           <div class="flex gap-2">
             <UButton
@@ -213,8 +227,24 @@
             </UFormGroup>
           </div>
 
+          <!-- Telegram-specific fields -->
+          <div v-if="form.source === 'TELEGRAM'" class="telegram-fields">
+            <div class="telegram-header">
+              <UIcon name="i-heroicons-paper-airplane" />
+              <span>Telegram параметры</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <UFormGroup label="Кол. подписчиков">
+                <UInput v-model="form.subscribers" type="number" min="0" placeholder="0" />
+              </UFormGroup>
+              <UFormGroup label="Кол. кликов">
+                <UInput v-model="form.clicks" type="number" min="0" placeholder="0" />
+              </UFormGroup>
+            </div>
+          </div>
+
           <!-- Calculated fields preview -->
-          <div class="calculated-preview">
+          <div class="calculated-preview" :class="{ 'with-telegram': form.source === 'TELEGRAM' }">
             <div class="calc-item">
               <span class="calc-label">CPL:</span>
               <span class="calc-value">${{ calculatedCPL }}</span>
@@ -234,6 +264,15 @@
               <span class="calc-value" :class="parseFloat(calculatedROI) >= 0 ? 'text-green-500' : 'text-red-500'">
                 {{ calculatedROI }}%
               </span>
+            </div>
+            <!-- Telegram-specific calculated metrics -->
+            <div v-if="form.source === 'TELEGRAM'" class="calc-item telegram-metric">
+              <span class="calc-label">CPC:</span>
+              <span class="calc-value text-cyan-400">${{ calculatedCPC }}</span>
+            </div>
+            <div v-if="form.source === 'TELEGRAM'" class="calc-item telegram-metric">
+              <span class="calc-label">CPA:</span>
+              <span class="calc-value text-cyan-400">${{ calculatedCPA }}</span>
             </div>
           </div>
         </form>
@@ -291,6 +330,9 @@ interface Statistic {
   spend: number
   ftd: number
   revenue: number
+  // Telegram-specific
+  subscribers?: number
+  clicks?: number
   user?: { name: string; username: string }
 }
 
@@ -333,7 +375,10 @@ const form = reactive({
   leads: 0,
   spend: 0,
   ftd: 0,
-  revenue: 0
+  revenue: 0,
+  // Telegram-specific fields
+  subscribers: 0,
+  clicks: 0
 })
 
 
@@ -383,6 +428,8 @@ const columns = [
   { key: 'profit', label: 'Прибыль', sortable: true },
   { key: 'roi', label: 'ROI', sortable: true },
   { key: 'cr', label: 'CR%', sortable: true },
+  { key: 'cpc', label: 'CPC', sortable: true },
+  { key: 'cpa', label: 'CPA', sortable: true },
   { key: 'actions', label: '' }
 ]
 
@@ -406,6 +453,17 @@ const calculatedROI = computed(() => {
   return (((form.revenue - form.spend) / form.spend) * 100).toFixed(1)
 })
 
+// Telegram-specific calculated metrics
+const calculatedCPC = computed(() => {
+  if (form.clicks === 0) return '0.00'
+  return (form.spend / form.clicks).toFixed(2)
+})
+
+const calculatedCPA = computed(() => {
+  if (form.subscribers === 0) return '0.00'
+  return (form.spend / form.subscribers).toFixed(2)
+})
+
 // Methods
 const getProfit = (row: Statistic) => row.revenue - row.spend
 
@@ -417,6 +475,17 @@ const getRoi = (row: Statistic) => {
 const getCr = (row: Statistic) => {
   if (row.leads === 0) return 0
   return (row.ftd / row.leads) * 100
+}
+
+// Telegram-specific metrics
+const getCpc = (row: Statistic): number | null => {
+  if (row.source !== 'TELEGRAM' || !row.clicks || row.clicks === 0) return null
+  return row.spend / row.clicks
+}
+
+const getCpa = (row: Statistic): number | null => {
+  if (row.source !== 'TELEGRAM' || !row.subscribers || row.subscribers === 0) return null
+  return row.spend / row.subscribers
 }
 
 const formatDate = (dateStr: string) => {
@@ -505,6 +574,9 @@ const resetForm = () => {
   form.spend = 0
   form.ftd = 0
   form.revenue = 0
+  // Reset Telegram fields
+  form.subscribers = 0
+  form.clicks = 0
 }
 
 const openAddModal = () => {
@@ -524,6 +596,9 @@ const openEditModal = (row: Statistic) => {
   form.spend = row.spend
   form.ftd = row.ftd
   form.revenue = row.revenue
+  // Telegram fields
+  form.subscribers = row.subscribers || 0
+  form.clicks = row.clicks || 0
   isModalOpen.value = true
 }
 
@@ -667,6 +742,35 @@ onMounted(async () => {
 .calc-value {
   font-size: 1.125rem;
   font-weight: 600;
+}
+
+/* Telegram-specific fields styling */
+.telegram-fields {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 0.75rem;
+}
+
+.telegram-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #22d3ee;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.calculated-preview.with-telegram {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.telegram-metric {
+  background: rgba(6, 182, 212, 0.15);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
 }
 
 @media (max-width: 768px) {

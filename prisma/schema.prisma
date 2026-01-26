@@ -48,6 +48,9 @@ model Statistic {
   spend     Float    @default(0)
   ftd       Int      @default(0)
   revenue   Float    @default(0)
+  // Telegram-specific fields (CPC и CPA рассчитываются автоматически)
+  subscribers Int?   // Кол. подписчиков
+  clicks      Int?   // Кол. кликов
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())

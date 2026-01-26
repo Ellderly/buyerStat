@@ -189,7 +189,8 @@ export default defineEventHandler(async (event) => {
       ...c,
       profit: c.revenue - c.spend,
       roi: c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : 0,
-      cr: c.leads > 0 ? (c.ftd / c.leads) * 100 : 0
+      cr: c.leads > 0 ? (c.ftd / c.leads) * 100 : 0,
+      cpl: c.leads > 0 ? c.spend / c.leads : 0
     }))
     .sort((a, b) => b.roi - a.roi)
     .slice(0, 5)

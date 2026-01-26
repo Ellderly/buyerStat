@@ -41,6 +41,9 @@ export default defineEventHandler(async (event) => {
       spend: parseFloat(body.spend) || 0,
       ftd: parseInt(body.ftd) || 0,
       revenue: parseFloat(body.revenue) || 0,
+      // Telegram-specific fields (CPC/CPA рассчитываются на клиенте)
+      subscribers: body.source === 'TELEGRAM' ? (parseInt(body.subscribers) || null) : null,
+      clicks: body.source === 'TELEGRAM' ? (parseInt(body.clicks) || null) : null,
       userId: session.userId
     }
   })

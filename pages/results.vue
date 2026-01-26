@@ -178,6 +178,20 @@
             <div class="roi-indicator" :class="getRoiClass(getROI(row))"></div>
           </div>
         </template>
+
+        <template #cpc-data="{ row }">
+          <span v-if="getCPC(row) !== null" class="text-cyan-400">
+            ${{ getCPC(row)!.toFixed(2) }}
+          </span>
+          <span v-else class="text-gray-600">-</span>
+        </template>
+
+        <template #cpa-data="{ row }">
+          <span v-if="getCPA(row) !== null" class="text-cyan-400">
+            ${{ getCPA(row)!.toFixed(2) }}
+          </span>
+          <span v-else class="text-gray-600">-</span>
+        </template>
       </UTable>
     </div>
   </div>
@@ -199,6 +213,9 @@ interface Statistic {
   spend: number
   ftd: number
   revenue: number
+  // Telegram-specific
+  subscribers?: number
+  clicks?: number
   user?: { name: string; username: string }
 }
 
@@ -286,7 +303,9 @@ const columns = computed(() => {
     { key: 'revenue', label: 'Доход', sortable: true },
     { key: 'profit', label: 'Прибыль', sortable: true },
     { key: 'roi', label: 'ROI', sortable: true },
-    { key: 'cr', label: 'CR%', sortable: true }
+    { key: 'cr', label: 'CR%', sortable: true },
+    { key: 'cpc', label: 'CPC', sortable: true },
+    { key: 'cpa', label: 'CPA', sortable: true }
   ]
 })
 
@@ -305,6 +324,17 @@ function getCPL(row: Statistic) {
 
 function getCR(row: Statistic) {
   return row.leads > 0 ? (row.ftd / row.leads) * 100 : 0
+}
+
+// Telegram-specific metrics
+function getCPC(row: Statistic) {
+  if (row.source !== 'TELEGRAM' || !row.clicks || row.clicks === 0) return null
+  return row.spend / row.clicks
+}
+
+function getCPA(row: Statistic) {
+  if (row.source !== 'TELEGRAM' || !row.subscribers || row.subscribers === 0) return null
+  return row.spend / row.subscribers
 }
 
 function formatDate(dateStr: string) {
