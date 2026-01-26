@@ -105,6 +105,10 @@
         <span class="total-value">{{ totals.ftd.toLocaleString() }}</span>
       </div>
       <div class="total-card">
+        <span class="total-label">CR%</span>
+        <span class="total-value text-emerald-400">{{ totals.cr.toFixed(1) }}%</span>
+      </div>
+      <div class="total-card">
         <span class="total-label">Расходы</span>
         <span class="total-value">${{ totals.spend.toFixed(2) }}</span>
       </div>
@@ -123,6 +127,10 @@
         <span class="total-value" :class="totals.roi >= 0 ? 'positive' : 'negative'">
           {{ totals.roi.toFixed(1) }}%
         </span>
+      </div>
+      <div class="total-card cpl">
+        <span class="total-label">CPL</span>
+        <span class="total-value">${{ totals.cpl.toFixed(2) }}</span>
       </div>
     </div>
 
@@ -226,6 +234,8 @@ interface Totals {
   revenue: number
   profit: number
   roi: number
+  cpl: number
+  cr: number
 }
 
 const toast = useToast()
@@ -233,7 +243,7 @@ const toast = useToast()
 // State
 const results = ref<Statistic[]>([])
 const totals = ref<Totals>({
-  leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0
+  leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0, cpl: 0, cr: 0
 })
 const isLoading = ref(false)
 const period = ref('week')
@@ -298,6 +308,7 @@ const columns = computed(() => {
     { key: 'offer', label: 'Оффер', sortable: true },
     { key: 'creative', label: 'Креатив', sortable: true },
     { key: 'leads', label: 'Лиды', sortable: true },
+    { key: 'cpl', label: 'CPL', sortable: true },
     { key: 'spend', label: 'Расход', sortable: true },
     { key: 'ftd', label: 'FTD', sortable: true },
     { key: 'revenue', label: 'Доход', sortable: true },
@@ -421,7 +432,7 @@ async function fetchResults() {
     results.value = response.statistics
 
     // Calculate totals
-    const t = { leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0 }
+    const t = { leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0, cpl: 0, cr: 0 }
     for (const r of response.statistics) {
       t.leads += r.leads
       t.spend += r.spend
@@ -430,6 +441,8 @@ async function fetchResults() {
     }
     t.profit = t.revenue - t.spend
     t.roi = t.spend > 0 ? ((t.revenue - t.spend) / t.spend) * 100 : 0
+    t.cpl = t.leads > 0 ? t.spend / t.leads : 0
+    t.cr = t.leads > 0 ? (t.ftd / t.leads) * 100 : 0
     totals.value = t
   } catch (error) {
     toast.add({ title: 'Ошибка загрузки', color: 'red' })

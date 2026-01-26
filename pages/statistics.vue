@@ -120,6 +120,10 @@
           <span class="text-emerald-400">{{ getCr(row).toFixed(1) }}%</span>
         </template>
 
+        <template #cpl-data="{ row }">
+          <span class="text-purple-400">${{ getCpl(row).toFixed(2) }}</span>
+        </template>
+
         <template #cpc-data="{ row }">
           <span v-if="getCpc(row) !== null" class="text-cyan-400">
             ${{ getCpc(row)!.toFixed(2) }}
@@ -422,6 +426,7 @@ const columns = [
   { key: 'offer', label: 'Оффер', sortable: true },
   { key: 'creative', label: 'Креатив', sortable: true },
   { key: 'leads', label: 'Лиды', sortable: true },
+  { key: 'cpl', label: 'CPL', sortable: true },
   { key: 'spend', label: 'Расходы', sortable: true },
   { key: 'ftd', label: 'FTD', sortable: true },
   { key: 'revenue', label: 'Доход', sortable: true },
@@ -475,6 +480,11 @@ const getRoi = (row: Statistic) => {
 const getCr = (row: Statistic) => {
   if (row.leads === 0) return 0
   return (row.ftd / row.leads) * 100
+}
+
+const getCpl = (row: Statistic) => {
+  if (row.leads === 0) return 0
+  return row.spend / row.leads
 }
 
 // Telegram-specific metrics
