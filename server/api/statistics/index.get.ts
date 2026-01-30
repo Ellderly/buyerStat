@@ -11,6 +11,11 @@ export default defineEventHandler(async (event) => {
   const session = JSON.parse(cookie)
   const { userId, role } = session
 
+  // Pagination params
+  const page = parseInt(query.page as string) || 1
+  const limit = parseInt(query.limit as string) || 25
+  const skip = (page - 1) * limit
+
   // Build filter based on role
   let whereClause: any = {}
 
@@ -69,6 +74,30 @@ export default defineEventHandler(async (event) => {
     whereClause.userId = parseInt(query.userId as string)
   }
 
+  // Get total count for pagination
+  const total = await prisma.statistic.count({ where: whereClause })
+
+  // Get aggregated totals for ALL matching records (not just current page)
+  const aggregates = await prisma.statistic.aggregate({
+    where: whereClause,
+    _sum: {
+      leads: true,
+      spend: true,
+      ftd: true,
+      revenue: true
+    }
+  })
+
+  const totalLeads = aggregates._sum.leads || 0
+  const totalSpend = aggregates._sum.spend || 0
+  const totalFtd = aggregates._sum.ftd || 0
+  const totalRevenue = aggregates._sum.revenue || 0
+  const totalProfit = totalRevenue - totalSpend
+  const totalRoi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0
+  const totalCpl = totalLeads > 0 ? totalSpend / totalLeads : 0
+  const totalCr = totalLeads > 0 ? (totalFtd / totalLeads) * 100 : 0
+
+  // Get paginated statistics
   const statistics = await prisma.statistic.findMany({
     where: whereClause,
     include: {
@@ -76,8 +105,28 @@ export default defineEventHandler(async (event) => {
         select: { name: true, username: true }
       }
     },
-    orderBy: { date: 'desc' }
+    orderBy: { date: 'desc' },
+    skip,
+    take: limit
   })
 
-  return { statistics }
+  return { 
+    statistics,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    },
+    totals: {
+      leads: totalLeads,
+      spend: totalSpend,
+      ftd: totalFtd,
+      revenue: totalRevenue,
+      profit: totalProfit,
+      roi: totalRoi,
+      cpl: totalCpl,
+      cr: totalCr
+    }
+  }
 })

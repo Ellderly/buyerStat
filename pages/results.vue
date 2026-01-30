@@ -169,38 +169,86 @@
         </template>
 
         <template #cr-data="{ row }">
-          {{ getCR(row).toFixed(1) }}%
+          {{ (row.cr ?? 0).toFixed(1) }}%
         </template>
 
         <template #profit-data="{ row }">
-          <span :class="getProfit(row) >= 0 ? 'text-green-500' : 'text-red-500'">
-            ${{ getProfit(row).toFixed(2) }}
+          <span :class="(row.profit ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'">
+            ${{ (row.profit ?? 0).toFixed(2) }}
           </span>
         </template>
 
         <template #roi-data="{ row }">
           <div class="flex items-center gap-2">
-            <span :class="getROI(row) >= 0 ? 'text-green-500' : 'text-red-500'">
-              {{ getROI(row).toFixed(1) }}%
+            <span :class="(row.roi ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'">
+              {{ (row.roi ?? 0).toFixed(1) }}%
             </span>
-            <div class="roi-indicator" :class="getRoiClass(getROI(row))"></div>
+            <div class="roi-indicator" :class="getRoiClass(row.roi ?? 0)"></div>
           </div>
         </template>
 
         <template #cpc-data="{ row }">
-          <span v-if="getCPC(row) !== null" class="text-cyan-400">
-            ${{ getCPC(row)!.toFixed(2) }}
+          <span v-if="row.cpc != null" class="text-cyan-400">
+            ${{ row.cpc.toFixed(2) }}
           </span>
           <span v-else class="text-gray-600">-</span>
         </template>
 
         <template #cpa-data="{ row }">
-          <span v-if="getCPA(row) !== null" class="text-cyan-400">
-            ${{ getCPA(row)!.toFixed(2) }}
+          <span v-if="row.cpa != null" class="text-cyan-400">
+            ${{ row.cpa.toFixed(2) }}
           </span>
           <span v-else class="text-gray-600">-</span>
         </template>
       </UTable>
+
+      <!-- Pagination -->
+      <div class="pagination-wrapper">
+        <div class="pagination-info">
+          <span>Показано {{ paginationStart }}-{{ paginationEnd }} из {{ pagination.total }}</span>
+        </div>
+        <div class="pagination-controls">
+          <USelectMenu
+            v-model="pagination.limit"
+            :options="limitOptions"
+            option-attribute="label"
+            value-attribute="value"
+            @change="onLimitChange"
+            class="per-page-select"
+          />
+          <div class="page-buttons">
+            <UButton
+              icon="i-heroicons-chevron-double-left"
+              size="xs"
+              variant="ghost"
+              :disabled="pagination.page === 1"
+              @click="goToPage(1)"
+            />
+            <UButton
+              icon="i-heroicons-chevron-left"
+              size="xs"
+              variant="ghost"
+              :disabled="pagination.page === 1"
+              @click="goToPage(pagination.page - 1)"
+            />
+            <span class="page-indicator">{{ pagination.page }} / {{ pagination.totalPages }}</span>
+            <UButton
+              icon="i-heroicons-chevron-right"
+              size="xs"
+              variant="ghost"
+              :disabled="pagination.page >= pagination.totalPages"
+              @click="goToPage(pagination.page + 1)"
+            />
+            <UButton
+              icon="i-heroicons-chevron-double-right"
+              size="xs"
+              variant="ghost"
+              :disabled="pagination.page >= pagination.totalPages"
+              @click="goToPage(pagination.totalPages)"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -225,6 +273,13 @@ interface Statistic {
   subscribers?: number
   clicks?: number
   user?: { name: string; username: string }
+  // Computed fields for sorting
+  profit?: number
+  roi?: number
+  cr?: number
+  cpl?: number
+  cpc?: number
+  cpa?: number
 }
 
 interface Totals {
@@ -250,6 +305,41 @@ const period = ref('week')
 const userRole = ref('')
 const employees = ref<Array<{ id: number; name: string }>>([])
 const offerOptions = ref<Array<{ label: string; value: string }>>([])
+
+// Pagination
+const pagination = reactive({
+  page: 1,
+  limit: 25,
+  total: 0,
+  totalPages: 1
+})
+
+const limitOptions = [
+  { label: '10 записей', value: 10 },
+  { label: '25 записей', value: 25 },
+  { label: '50 записей', value: 50 },
+  { label: '100 записей', value: 100 }
+]
+
+const paginationStart = computed(() => {
+  if (pagination.total === 0) return 0
+  return (pagination.page - 1) * pagination.limit + 1
+})
+
+const paginationEnd = computed(() => {
+  return Math.min(pagination.page * pagination.limit, pagination.total)
+})
+
+const goToPage = (page: number) => {
+  if (page < 1 || page > pagination.totalPages) return
+  pagination.page = page
+  fetchResults()
+}
+
+const onLimitChange = () => {
+  pagination.page = 1
+  fetchResults()
+}
 
 const filters = reactive({
   startDate: '',
@@ -427,23 +517,34 @@ async function fetchResults() {
     if (filters.offer) params.append('offer', filters.offer)
     if (filters.creative) params.append('creative', filters.creative)
     if (filters.userId) params.append('userId', filters.userId.toString())
+    
+    // Pagination params
+    params.append('page', pagination.page.toString())
+    params.append('limit', pagination.limit.toString())
 
-    const response = await $fetch<{ statistics: Statistic[] }>(`/api/statistics?${params}`)
-    results.value = response.statistics
+    const response = await $fetch<{ 
+      statistics: Statistic[]
+      pagination: { page: number; limit: number; total: number; totalPages: number }
+      totals: { leads: number; spend: number; ftd: number; revenue: number; profit: number; roi: number; cpl: number; cr: number }
+    }>(`/api/statistics?${params}`)
+    
+    // Add computed fields for sorting
+    results.value = response.statistics.map(row => ({
+      ...row,
+      profit: row.revenue - row.spend,
+      roi: row.spend > 0 ? ((row.revenue - row.spend) / row.spend) * 100 : 0,
+      cr: row.leads > 0 ? (row.ftd / row.leads) * 100 : 0,
+      cpl: row.leads > 0 ? row.spend / row.leads : 0,
+      cpc: row.source === 'TELEGRAM' && row.clicks && row.clicks > 0 ? row.spend / row.clicks : undefined,
+      cpa: row.source === 'TELEGRAM' && row.subscribers && row.subscribers > 0 ? row.spend / row.subscribers : undefined
+    }))
+    
+    pagination.page = response.pagination.page
+    pagination.total = response.pagination.total
+    pagination.totalPages = response.pagination.totalPages
 
-    // Calculate totals
-    const t = { leads: 0, spend: 0, ftd: 0, revenue: 0, profit: 0, roi: 0, cpl: 0, cr: 0 }
-    for (const r of response.statistics) {
-      t.leads += r.leads
-      t.spend += r.spend
-      t.ftd += r.ftd
-      t.revenue += r.revenue
-    }
-    t.profit = t.revenue - t.spend
-    t.roi = t.spend > 0 ? ((t.revenue - t.spend) / t.spend) * 100 : 0
-    t.cpl = t.leads > 0 ? t.spend / t.leads : 0
-    t.cr = t.leads > 0 ? (t.ftd / t.leads) * 100 : 0
-    totals.value = t
+    // Use totals from API (calculated for ALL matching records)
+    totals.value = response.totals
   } catch (error) {
     toast.add({ title: 'Ошибка загрузки', color: 'red' })
   } finally {
@@ -458,6 +559,7 @@ function resetFilters() {
   filters.offer = ''
   filters.creative = ''
   filters.userId = ''
+  pagination.page = 1
   applyPeriod()
 }
 
@@ -651,6 +753,44 @@ onMounted(async () => {
   background: #ef4444;
 }
 
+/* Pagination styles */
+.pagination-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.pagination-info {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.per-page-select {
+  width: 140px;
+}
+
+.page-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.page-indicator {
+  padding: 0 0.75rem;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
   .filters-grid {
     grid-template-columns: 1fr;
@@ -658,6 +798,24 @@ onMounted(async () => {
 
   .totals-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pagination-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    text-align: center;
+  }
+
+  .pagination-controls {
+    justify-content: space-between;
+  }
+
+  .per-page-select {
+    width: 120px;
   }
 }
 </style>
