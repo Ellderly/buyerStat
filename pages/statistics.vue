@@ -485,14 +485,17 @@ const sourceOptions = [
   { label: 'Telegram', value: 'TELEGRAM' }
 ]
 
-const geoOptions = [
-  { label: 'RuEU full pull', value: 'RuEU full pull' },
-  { label: 'RuEU short pull', value: 'RuEU short pull' },
-  { label: 'RuTR', value: 'RuTR' },
-  { label: 'RuDE', value: 'RuDE' },
-  { label: 'RuES', value: 'RuES' },
-  { label: 'Ru Prubaltu', value: 'Ru Prubaltu' }
-]
+const geoOptions = ref<Array<{ label: string; value: string }>>([])
+
+const fetchGeos = async () => {
+  try {
+    const response = await $fetch<{ geos: Array<{ name: string; code: string }> }>('/api/geos')
+    geoOptions.value = response.geos.map(g => ({ label: g.name, value: g.name }))
+  } catch (error) {
+    console.error('Failed to fetch geos')
+    geoOptions.value = []
+  }
+}
 
 const offerOptions = ref<Array<{ label: string; value: string }>>([])
 
@@ -775,6 +778,7 @@ const deleteStatistic = async () => {
 onMounted(async () => {
   await fetchUserTeams()
   fetchOffers()
+  fetchGeos()
   fetchEmployees()
   fetchStatistics()
 })

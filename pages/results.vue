@@ -371,15 +371,21 @@ const sourceOptions = [
   { label: 'Telegram', value: 'TELEGRAM' }
 ]
 
-const geoOptions = [
-  { label: 'Все ГЕО', value: '' },
-  { label: 'RuEU full pull', value: 'RuEU full pull' },
-  { label: 'RuEU short pull', value: 'RuEU short pull' },
-  { label: 'RuTR', value: 'RuTR' },
-  { label: 'RuDE', value: 'RuDE' },
-  { label: 'RuES', value: 'RuES' },
-  { label: 'Ru Prubaltu', value: 'Ru Prubaltu' }
-]
+const geoOptions = ref<Array<{ label: string; value: string }>>([
+  { label: 'Все ГЕО', value: '' }
+])
+
+const fetchGeos = async () => {
+  try {
+    const response = await $fetch<{ geos: Array<{ name: string; code: string }> }>('/api/geos')
+    geoOptions.value = [
+      { label: 'Все ГЕО', value: '' },
+      ...response.geos.map(g => ({ label: g.name, value: g.name }))
+    ]
+  } catch (error) {
+    console.error('Failed to fetch geos')
+  }
+}
 
 // Table columns - show userName only for admin/teamlead
 const columns = computed(() => {
@@ -635,6 +641,7 @@ onMounted(async () => {
     await fetchEmployees()
   }
   await fetchOffers()
+  await fetchGeos()
   applyPeriod()
 })
 </script>

@@ -126,6 +126,38 @@
             </UTable>
           </div>
         </div>
+
+        <!-- GEO Tab -->
+        <div v-if="item.key === 'geos'" class="tab-content">
+          <div class="tab-header">
+            <h2 class="tab-title">GEO</h2>
+            <UButton icon="i-heroicons-plus" @click="openGeoModal()">
+              Добавить GEO
+            </UButton>
+          </div>
+
+          <div class="table-card">
+            <UTable
+              :rows="geos"
+              :columns="geoColumns"
+              :loading="isLoadingGeos"
+            >
+              <template #createdAt-data="{ row }">
+                {{ formatDate(row.createdAt) }}
+              </template>
+
+              <template #actions-data="{ row }">
+                <UButton
+                  icon="i-heroicons-trash"
+                  size="xs"
+                  variant="ghost"
+                  color="red"
+                  @click="confirmDeleteGeo(row)"
+                />
+              </template>
+            </UTable>
+          </div>
+        </div>
       </template>
     </UTabs>
 
@@ -281,6 +313,49 @@
         </template>
       </UCard>
     </UModal>
+
+    <!-- Geo Modal -->
+    <UModal v-model="isGeoModalOpen">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold">Новый GEO</h3>
+        </template>
+
+        <form class="space-y-4">
+          <UFormGroup label="Название" required>
+            <UInput v-model="geoForm.name" placeholder="RuEU short pull" />
+          </UFormGroup>
+          <UFormGroup label="Код (опционально)">
+            <UInput v-model="geoForm.code" placeholder="rueu_short" />
+          </UFormGroup>
+        </form>
+
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" @click="isGeoModalOpen = false">Отмена</UButton>
+            <UButton @click="createGeo" :loading="isSavingGeo">Добавить</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Delete Geo Confirmation -->
+    <UModal v-model="isDeleteGeoModalOpen">
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold text-red-500">Удалить GEO?</h3>
+        </template>
+        <p class="text-gray-400">
+          GEO будет деактивирован и скрыт из списка выбора.
+        </p>
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" @click="isDeleteGeoModalOpen = false">Отмена</UButton>
+            <UButton color="red" @click="deleteGeo">Удалить</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
@@ -309,6 +384,14 @@ interface Offer {
   id: number
   name: string
   value: string
+  isActive: boolean
+  createdAt: string
+}
+
+interface Geo {
+  id: number
+  name: string
+  code: string
   isActive: boolean
   createdAt: string
 }
@@ -352,7 +435,8 @@ const userForm = reactive({
 const tabs = [
   { key: 'users', label: 'Пользователи', icon: 'i-heroicons-users' },
   { key: 'teams', label: 'Команды', icon: 'i-heroicons-user-group' },
-  { key: 'offers', label: 'Офферы', icon: 'i-heroicons-tag' }
+  { key: 'offers', label: 'Офферы', icon: 'i-heroicons-tag' },
+  { key: 'geos', label: 'GEO', icon: 'i-heroicons-globe-alt' }
 ]
 
 // Users table columns
@@ -379,6 +463,26 @@ const teamOptions = computed(() =>
 // Offer columns
 const offerColumns = [
   { key: 'name', label: 'Название' },
+  { key: 'createdAt', label: 'Добавлен' },
+  { key: 'actions', label: '' }
+]
+
+// Geos state
+const geos = ref<Geo[]>([])
+const isLoadingGeos = ref(false)
+const isGeoModalOpen = ref(false)
+const isSavingGeo = ref(false)
+const isDeleteGeoModalOpen = ref(false)
+const deletingGeoId = ref<number | null>(null)
+const geoForm = reactive({
+  name: '',
+  code: ''
+})
+
+// Geo columns
+const geoColumns = [
+  { key: 'name', label: 'Название' },
+  { key: 'code', label: 'Код' },
   { key: 'createdAt', label: 'Добавлен' },
   { key: 'actions', label: '' }
 ]
@@ -605,11 +709,69 @@ async function deleteOffer() {
   }
 }
 
+// Geos functions
+async function fetchGeos() {
+  isLoadingGeos.value = true
+  try {
+    const response = await $fetch<{ geos: Geo[] }>('/api/geos')
+    geos.value = response.geos
+  } catch (error) {
+    console.error('Failed to fetch geos')
+  } finally {
+    isLoadingGeos.value = false
+  }
+}
+
+function openGeoModal() {
+  geoForm.name = ''
+  geoForm.code = ''
+  isGeoModalOpen.value = true
+}
+
+async function createGeo() {
+  if (!geoForm.name) {
+    toast.add({ title: 'Заполните название', color: 'red' })
+    return
+  }
+  isSavingGeo.value = true
+  try {
+    await $fetch('/api/geos', {
+      method: 'POST',
+      body: geoForm
+    })
+    toast.add({ title: 'GEO добавлен', color: 'green' })
+    isGeoModalOpen.value = false
+    fetchGeos()
+  } catch (error: any) {
+    toast.add({ title: error.data?.message || 'Ошибка', color: 'red' })
+  } finally {
+    isSavingGeo.value = false
+  }
+}
+
+function confirmDeleteGeo(geo: Geo) {
+  deletingGeoId.value = geo.id
+  isDeleteGeoModalOpen.value = true
+}
+
+async function deleteGeo() {
+  if (!deletingGeoId.value) return
+  try {
+    await $fetch(`/api/geos/${deletingGeoId.value}`, { method: 'DELETE' })
+    toast.add({ title: 'GEO удален', color: 'green' })
+    isDeleteGeoModalOpen.value = false
+    fetchGeos()
+  } catch (error: any) {
+    toast.add({ title: error.data?.message || 'Ошибка', color: 'red' })
+  }
+}
+
 // Initialize
 onMounted(() => {
   fetchUsers()
   fetchTeams()
   fetchOffers()
+  fetchGeos()
 })
 </script>
 
