@@ -40,9 +40,11 @@ export default defineEventHandler(async (event) => {
     }
   }
   if (query.endDate) {
+    const end = new Date(query.endDate as string)
+    end.setHours(23, 59, 59, 999)
     whereClause.date = {
       ...whereClause.date,
-      lte: new Date(query.endDate as string)
+      lte: end
     }
   }
 

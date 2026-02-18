@@ -31,16 +31,23 @@ export default defineEventHandler(async (event) => {
       break
     case '3days':
       startDate.setDate(endDate.getDate() - 3)
+      startDate.setHours(0, 0, 0, 0)
+      endDate.setHours(23, 59, 59, 999)
       break
     case 'week':
       startDate.setDate(endDate.getDate() - 7)
+      startDate.setHours(0, 0, 0, 0)
+      endDate.setHours(23, 59, 59, 999)
       break
     case 'currentMonth':
       startDate.setDate(1)
       startDate.setHours(0, 0, 0, 0)
+      endDate.setHours(23, 59, 59, 999)
       break
     case 'month':
       startDate.setMonth(endDate.getMonth() - 1)
+      startDate.setHours(0, 0, 0, 0)
+      endDate.setHours(23, 59, 59, 999)
       break
     case 'prevMonth':
       startDate.setMonth(startDate.getMonth() - 1)
@@ -51,6 +58,8 @@ export default defineEventHandler(async (event) => {
       break
     case 'all':
       startDate.setFullYear(2020, 0, 1)
+      startDate.setHours(0, 0, 0, 0)
+      endDate.setHours(23, 59, 59, 999)
       break
   }
 
