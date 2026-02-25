@@ -445,7 +445,7 @@ function getCPA(row: Statistic) {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('ru-RU')
+  return dateStr.split('T')[0].split('-').reverse().join('.')
 }
 
 function getSourceColor(source: string): 'blue' | 'red' | 'pink' | 'cyan' | 'gray' {

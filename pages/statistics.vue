@@ -592,7 +592,7 @@ const getCpa = (row: Statistic): number | null => {
 }
 
 const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('ru-RU')
+  return dateStr.split('T')[0].split('-').reverse().join('.')
 }
 
 const getSourceColor = (source: string): 'blue' | 'red' | 'pink' | 'cyan' | 'gray' => {
