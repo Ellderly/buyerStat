@@ -183,6 +183,12 @@
           :loading="isLoading"
           :empty-state="{ icon: 'i-heroicons-circle-stack-20-solid', label: 'Нет данных' }"
         >
+          <template #source-data="{ row }">
+            <UBadge :color="getSourceBadgeColor(row.source)" variant="soft" size="xs">
+              {{ row.source }}
+            </UBadge>
+          </template>
+
           <template #profit-data="{ row }">
             <span :class="row.profit >= 0 ? 'text-green-500' : 'text-red-500'">
               ${{ row.profit.toFixed(2) }}
@@ -396,6 +402,8 @@ const periodOptions = [
 ]
 
 const creativeColumns = [
+  { key: 'source', label: 'Источник' },
+  { key: 'userName', label: 'Сотрудник' },
   { key: 'creative', label: 'Креатив' },
   { key: 'offer', label: 'Оффер' },
   { key: 'leads', label: 'Лиды' },
@@ -441,6 +449,16 @@ function getRoiClass(roi: number) {
   if (roi < 0) return 'negative'
   if (roi < 30) return 'neutral'
   return 'positive'
+}
+
+function getSourceBadgeColor(source: string): 'blue' | 'red' | 'pink' | 'cyan' | 'gray' {
+  const colors: Record<string, 'blue' | 'red' | 'pink' | 'cyan' | 'gray'> = {
+    FACEBOOK: 'blue',
+    GOOGLE: 'red',
+    TIKTOK: 'pink',
+    TELEGRAM: 'cyan'
+  }
+  return colors[source] || 'gray'
 }
 
 async function fetchDashboard() {

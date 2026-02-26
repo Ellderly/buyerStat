@@ -29,11 +29,11 @@
           />
         </UFormGroup>
 
-        <UFormGroup label="Дата от">
+        <UFormGroup v-if="period === 'custom'" label="Дата от">
           <UInput v-model="filters.startDate" type="date" />
         </UFormGroup>
 
-        <UFormGroup label="Дата до">
+        <UFormGroup v-if="period === 'custom'" label="Дата до">
           <UInput v-model="filters.endDate" type="date" />
         </UFormGroup>
 

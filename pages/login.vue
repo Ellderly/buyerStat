@@ -112,7 +112,11 @@ const handleLogin = async () => {
     })
 
     if (response.success) {
-      await navigateTo('/dashboard')
+      if (response.user?.role === 'FINANCIER') {
+        await navigateTo('/finance')
+      } else {
+        await navigateTo('/dashboard')
+      }
     }
   } catch (e: any) {
     error.value = e.data?.message || 'Ошибка входа. Проверьте данные.'

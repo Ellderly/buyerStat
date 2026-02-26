@@ -10,17 +10,21 @@
       </div>
 
       <nav class="sidebar-nav">
-        <NuxtLink to="/dashboard" class="nav-item" active-class="active">
+        <NuxtLink v-if="!isFinancier" to="/dashboard" class="nav-item" active-class="active">
           <UIcon name="i-heroicons-squares-2x2" />
           <span>Dashboard</span>
         </NuxtLink>
-        <NuxtLink to="/statistics" class="nav-item" active-class="active">
+        <NuxtLink v-if="!isFinancier" to="/statistics" class="nav-item" active-class="active">
           <UIcon name="i-heroicons-table-cells" />
           <span>Статистика</span>
         </NuxtLink>
-        <NuxtLink to="/results" class="nav-item" active-class="active">
+        <NuxtLink v-if="!isFinancier" to="/results" class="nav-item" active-class="active">
           <UIcon name="i-heroicons-document-chart-bar" />
           <span>Результаты</span>
+        </NuxtLink>
+        <NuxtLink v-if="isFinancier || isAdmin" to="/finance" class="nav-item" active-class="active">
+          <UIcon name="i-heroicons-banknotes" />
+          <span>Финансы</span>
         </NuxtLink>
         <NuxtLink v-if="isAdmin" to="/admin" class="nav-item" active-class="active">
           <UIcon name="i-heroicons-cog-6-tooth" />
@@ -55,17 +59,21 @@
 
     <!-- Bottom Nav (Mobile) -->
     <nav class="bottom-nav">
-      <NuxtLink to="/dashboard" class="bottom-nav-item" active-class="active">
+      <NuxtLink v-if="!isFinancier" to="/dashboard" class="bottom-nav-item" active-class="active">
         <UIcon name="i-heroicons-squares-2x2" class="nav-icon" />
         <span>Dash</span>
       </NuxtLink>
-      <NuxtLink to="/statistics" class="bottom-nav-item" active-class="active">
+      <NuxtLink v-if="!isFinancier" to="/statistics" class="bottom-nav-item" active-class="active">
         <UIcon name="i-heroicons-table-cells" class="nav-icon" />
         <span>Stats</span>
       </NuxtLink>
-      <NuxtLink to="/results" class="bottom-nav-item" active-class="active">
+      <NuxtLink v-if="!isFinancier" to="/results" class="bottom-nav-item" active-class="active">
         <UIcon name="i-heroicons-document-chart-bar" class="nav-icon" />
         <span>Results</span>
+      </NuxtLink>
+      <NuxtLink v-if="isFinancier || isAdmin" to="/finance" class="bottom-nav-item" active-class="active">
+        <UIcon name="i-heroicons-banknotes" class="nav-icon" />
+        <span>Finance</span>
       </NuxtLink>
       <NuxtLink v-if="isAdmin" to="/admin" class="bottom-nav-item" active-class="active">
         <UIcon name="i-heroicons-cog-6-tooth" class="nav-icon" />
@@ -91,6 +99,7 @@ const router = useRouter()
 const userName = ref('')
 const userRole = ref('')
 const isAdmin = computed(() => userRole.value === 'ADMIN')
+const isFinancier = computed(() => userRole.value === 'FINANCIER')
 
 const userInitials = computed(() => {
   return userName.value ? userName.value.split(' ').map(n => n[0]).join('').toUpperCase() : '??'

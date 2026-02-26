@@ -8,8 +8,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (!data.value?.user) {
       return navigateTo('/login')
     }
+
+    // FINANCIER can only access /finance
+    if (data.value.user.role === 'FINANCIER' && to.path !== '/finance') {
+      return navigateTo('/finance')
+    }
   } catch {
     return navigateTo('/login')
   }
 })
-

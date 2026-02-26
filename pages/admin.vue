@@ -453,6 +453,7 @@ const userColumns = [
 const roleOptions = [
   { label: 'Байер', value: 'BUYER' },
   { label: 'Тимлид', value: 'TEAMLEAD' },
+  { label: 'Финансист', value: 'FINANCIER' },
   { label: 'Админ', value: 'ADMIN' }
 ]
 
@@ -488,10 +489,11 @@ const geoColumns = [
 ]
 
 // Methods
-function getRoleColor(role: string): 'blue' | 'purple' | 'red' | 'gray' {
-  const colors: Record<string, 'blue' | 'purple' | 'red' | 'gray'> = {
+function getRoleColor(role: string): 'blue' | 'purple' | 'red' | 'cyan' | 'gray' {
+  const colors: Record<string, 'blue' | 'purple' | 'red' | 'cyan' | 'gray'> = {
     BUYER: 'blue',
     TEAMLEAD: 'purple',
+    FINANCIER: 'cyan',
     ADMIN: 'red'
   }
   return colors[role] || 'gray'
@@ -501,6 +503,7 @@ function getRoleLabel(role: string) {
   const labels: Record<string, string> = {
     BUYER: 'Байер',
     TEAMLEAD: 'Тимлид',
+    FINANCIER: 'Финансист',
     ADMIN: 'Админ'
   }
   return labels[role] || role

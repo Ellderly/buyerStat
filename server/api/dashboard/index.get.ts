@@ -161,7 +161,10 @@ export default defineEventHandler(async (event) => {
       leads: true,
       spend: true,
       ftd: true,
-      revenue: true
+      revenue: true,
+      user: {
+        select: { name: true }
+      }
     }
   })
 
@@ -169,6 +172,8 @@ export default defineEventHandler(async (event) => {
   const creativeMap: Record<string, { 
     creative: string
     offer: string
+    source: string
+    userName: string
     leads: number
     spend: number
     ftd: number
@@ -181,6 +186,8 @@ export default defineEventHandler(async (event) => {
       creativeMap[key] = {
         creative: stat.creative,
         offer: stat.offer,
+        source: stat.source,
+        userName: stat.user?.name || '-',
         leads: 0,
         spend: 0,
         ftd: 0,

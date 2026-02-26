@@ -37,14 +37,24 @@
           />
         </UFormGroup>
 
-        <UFormGroup label="Дата от">
+        <UFormGroup label="Период">
+          <USelectMenu
+            v-model="period"
+            :options="periodOptions"
+            option-attribute="label"
+            value-attribute="value"
+            @change="applyPeriod"
+          />
+        </UFormGroup>
+
+        <UFormGroup v-if="period === 'custom'" label="Дата от">
           <UInput
             v-model="filters.startDate"
             type="date"
           />
         </UFormGroup>
 
-        <UFormGroup label="Дата до">
+        <UFormGroup v-if="period === 'custom'" label="Дата до">
           <UInput
             v-model="filters.endDate"
             type="date"
@@ -443,6 +453,67 @@ const onLimitChange = () => {
   fetchStatistics()
 }
 const selectedTeamFilter = ref<number | undefined>(undefined)
+
+const period = ref('all')
+const periodOptions = [
+  { label: 'Сегодня', value: 'today' },
+  { label: 'Вчера', value: 'yesterday' },
+  { label: '3 дня', value: '3days' },
+  { label: 'Неделя', value: 'week' },
+  { label: 'Текущий месяц', value: 'currentMonth' },
+  { label: 'Предыдущий месяц', value: 'prevMonth' },
+  { label: 'Весь период', value: 'all' },
+  { label: 'Произвольный', value: 'custom' }
+]
+
+function applyPeriod() {
+  const today = new Date()
+  let startDate = new Date()
+  let endDate = new Date()
+
+  switch (period.value) {
+    case 'today':
+      filters.startDate = today.toISOString().split('T')[0]
+      filters.endDate = today.toISOString().split('T')[0]
+      break
+    case 'yesterday':
+      startDate.setDate(today.getDate() - 1)
+      filters.startDate = startDate.toISOString().split('T')[0]
+      filters.endDate = startDate.toISOString().split('T')[0]
+      break
+    case '3days':
+      startDate.setDate(today.getDate() - 3)
+      filters.startDate = startDate.toISOString().split('T')[0]
+      filters.endDate = today.toISOString().split('T')[0]
+      break
+    case 'week':
+      startDate.setDate(today.getDate() - 7)
+      filters.startDate = startDate.toISOString().split('T')[0]
+      filters.endDate = today.toISOString().split('T')[0]
+      break
+    case 'currentMonth':
+      startDate.setDate(1)
+      filters.startDate = startDate.toISOString().split('T')[0]
+      filters.endDate = today.toISOString().split('T')[0]
+      break
+    case 'prevMonth':
+      startDate.setMonth(today.getMonth() - 1)
+      startDate.setDate(1)
+      endDate.setDate(0)
+      filters.startDate = startDate.toISOString().split('T')[0]
+      filters.endDate = endDate.toISOString().split('T')[0]
+      break
+    case 'all':
+      filters.startDate = ''
+      filters.endDate = ''
+      break
+  }
+
+  if (period.value !== 'custom') {
+    pagination.page = 1
+    fetchStatistics()
+  }
+}
 
 // Filters
 const filters = reactive({
