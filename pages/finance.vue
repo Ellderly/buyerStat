@@ -237,9 +237,6 @@ const columns = [
   { key: 'date', label: 'Дата', sortable: true },
   { key: 'userName', label: 'Сотрудник', sortable: false },
   { key: 'source', label: 'Источник', sortable: true },
-  { key: 'geo', label: 'ГЕО', sortable: true },
-  { key: 'offer', label: 'Оффер', sortable: true },
-  { key: 'creative', label: 'Креатив', sortable: true },
   { key: 'spend', label: 'Расходы', sortable: true }
 ]
 
